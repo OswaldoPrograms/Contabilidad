@@ -263,6 +263,47 @@
         #rep-tabla-inline tr.spacer-row td { padding: 4px 0; border-bottom: none; }
         #rep-tabla-inline .num { text-align: right; font-variant-numeric: tabular-nums; }
         #rep-tabla-inline .saldo { color: var(--accent); font-weight: 600; }
+
+        /* ── SEARCHABLE SELECT ── */
+        .ss-wrap { position: relative; width: 100%; display: flex; align-items: center; gap: 5px; }
+        .ss-input {
+            flex: 1; min-width: 0; padding: 11px 14px;
+            border: 1.5px solid var(--border); border-radius: 8px;
+            font-size: 0.93rem; font-family: 'DM Sans', sans-serif;
+            background: #fafaf8; color: var(--ink);
+            transition: border-color 0.15s, box-shadow 0.15s;
+            box-sizing: border-box; cursor: text;
+        }
+        .ss-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(26,60,94,0.1); background: #fff; }
+        .ss-dropdown {
+            display: none; position: absolute; left: 0; right: 0; top: calc(100% + 2px);
+            background: #fff; border: 1.5px solid var(--accent);
+            border-radius: 9px; box-shadow: 0 8px 24px rgba(15,17,23,0.13);
+            z-index: 9999; max-height: 240px; overflow-y: auto;
+        }
+        .ss-wrap:not(.has-value) .ss-dropdown { right: 0; }
+        .ss-dropdown.ss-open { display: block; }
+        .ss-option {
+            padding: 9px 14px; font-size: 0.85rem; cursor: pointer;
+            border-bottom: 1px solid #f2f0ec; color: var(--ink);
+            display: flex; gap: 8px; align-items: baseline;
+        }
+        .ss-option:last-child { border-bottom: none; }
+        .ss-option:hover { background: #eef4fb; }
+        .ss-option-code { font-weight: 700; color: var(--accent); font-size: 0.78rem; flex-shrink: 0; }
+        .ss-option-name { color: var(--ink); }
+        .ss-empty { padding: 12px 14px; font-size: 0.82rem; color: var(--muted); text-align: center; }
+        .ss-btn {
+            flex-shrink: 0;
+            width: 30px; height: 42px;
+            background: #e8e6e0; border: 1.5px solid var(--border);
+            border-radius: 7px; cursor: pointer; color: var(--muted);
+            font-size: 0.8rem; line-height: 1; padding: 0; margin: 0;
+            display: none; align-items: center; justify-content: center;
+            transition: background 0.15s, color 0.15s;
+        }
+        .ss-btn:hover { background: #d4d1cb; color: var(--ink); }
+        .ss-wrap.has-value .ss-btn { display: flex; }
     </style>
 </head>
 <body>
@@ -330,7 +371,7 @@
             </div>
             <div class="form-group">
                 <label>Rubro Padre</label>
-                <select id="c_padre" onchange="sugerirCta()"></select>
+                <div class="ss-wrap" id="ss-wrap-c_padre"><input class="ss-input" id="ss-c_padre" type="text" placeholder="Escribe para buscar rubro…" autocomplete="off"><button class="ss-btn" type="button" onclick="ssClear('c_padre')">✕</button><div class="ss-dropdown" id="ss-drop-c_padre"></div><input type="hidden" id="c_padre"></div>
             </div>
             <div class="form-group">
                 <label>Nombre de la Cuenta</label>
@@ -360,12 +401,6 @@
                 <input type="text" id="c_cod_suf" maxlength="3" placeholder="001" oninput="syncDisplayCta()">
                 <div style="font-size:0.7rem;color:var(--amber);margin-top:4px;">Úsalo solo si necesitas un código específico. Se renumerarán las cuentas siguientes.</div>
             </div>
-            <!-- Posición de inserción -->
-            <div class="form-group" id="c_pos_row" style="display:none;">
-                <label>Insertar en posición (dentro del rubro)</label>
-                <select id="c_pos_sel"></select>
-                <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Los códigos siguientes se renumerarán automáticamente.</div>
-            </div>
             <button class="btn-primary" onclick="guardarCuenta()">Guardar Cuenta</button>
             <button id="btn-cancel-c" class="btn-ghost" style="display:none" onclick="cancelarEdicion()">Cancelar edición</button>
         </div>
@@ -381,7 +416,7 @@
             <div class="card-title">Datos de la Subcuenta</div>
             <div class="form-group">
                 <label>Cuenta Padre</label>
-                <select id="s_padre" onchange="sugerirSub()"></select>
+                <div class="ss-wrap" id="ss-wrap-s_padre"><input class="ss-input" id="ss-s_padre" type="text" placeholder="Escribe para buscar cuenta…" autocomplete="off"><button class="ss-btn" type="button" onclick="ssClear('s_padre')">✕</button><div class="ss-dropdown" id="ss-drop-s_padre"></div><input type="hidden" id="s_padre"></div>
             </div>
             <div class="form-group">
                 <label>Nombre de la Subcuenta</label>
@@ -403,12 +438,6 @@
                 <label style="color:var(--amber);">⚠ Código manual (sufijo 3 dígitos)</label>
                 <input type="text" id="s_cod_suf" maxlength="3" placeholder="001" oninput="syncDisplaySub()">
                 <div style="font-size:0.7rem;color:var(--amber);margin-top:4px;">Úsalo solo si necesitas un código específico. Se renumerarán las subcuentas siguientes.</div>
-            </div>
-            <!-- Posición de inserción -->
-            <div class="form-group" id="s_pos_row" style="display:none;">
-                <label>Insertar en posición (dentro de la cuenta)</label>
-                <select id="s_pos_sel"></select>
-                <div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Los códigos siguientes se renumerarán automáticamente.</div>
             </div>
             <label style="margin-bottom:8px;">Clasificaciones</label>
             <div class="check-grid">
@@ -462,7 +491,7 @@
             <div class="card-title">Añadir Movimiento</div>
             <div class="form-group">
                 <label>Subcuenta Principal</label>
-                <select id="m_subcuenta" onchange="onChangeSub()"></select>
+                <div class="ss-wrap" id="ss-wrap-m_subcuenta"><input class="ss-input" id="ss-m_subcuenta" type="text" placeholder="Escribe para buscar subcuenta…" autocomplete="off"><button class="ss-btn" type="button" onclick="ssClear('m_subcuenta')">✕</button><div class="ss-dropdown" id="ss-drop-m_subcuenta"></div><input type="hidden" id="m_subcuenta"></div>
                 <div id="inv-hint-sub" style="display:none;margin-top:6px;font-size:0.72rem;font-weight:700;color:var(--green);padding:6px 10px;background:var(--green-lt);border-radius:6px;border:1px solid #a7d9c0;">📦 Subcuenta de <strong>Inventario</strong> — Se pedirá la cantidad al agregar el movimiento.</div>
             </div>
             <div class="two-col" style="margin-bottom:14px;">
@@ -477,7 +506,7 @@
             </div>
             <div class="iva-box">
                 <label>Subcuenta de IVA</label>
-                <select id="m_sub_iva" onchange="guardarIvaDefault()"></select>
+                <div class="ss-wrap" id="ss-wrap-m_sub_iva"><input class="ss-input" id="ss-m_sub_iva" type="text" placeholder="Escribe para buscar IVA…" autocomplete="off"><button class="ss-btn" type="button" onclick="ssClear('m_sub_iva')">✕</button><div class="ss-dropdown" id="ss-drop-m_sub_iva"></div><input type="hidden" id="m_sub_iva"></div>
                 <div class="iva-btn-row">
                     <button class="btn-iva" onclick="agregarConIVA('desglosar')">↙ Desglosar ÷ 1.16</button>
                     <button class="btn-iva" onclick="agregarConIVA('calcular')">＋ Calcular 16%</button>
@@ -541,9 +570,7 @@
                 <div class="card-title">Cuentas <span id="datos-c-count" style="font-weight:400;color:var(--muted);font-size:0.7rem;"></span></div>
                 <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
                     <input type="text" id="fil-c-buscar" placeholder="🔍 Buscar…" oninput="filtrarDatos('c')" style="font-size:0.82rem;padding:9px 12px;flex:1;min-width:120px;">
-                    <select id="fil-c-rubro" onchange="filtrarDatos('c')" style="font-size:0.82rem;padding:9px 10px;flex:1;min-width:120px;max-width:180px;">
-                        <option value="">Todos los rubros</option>
-                    </select>
+                    <div class="ss-wrap" id="ss-wrap-fil-c-rubro" style="flex:1;min-width:120px;max-width:180px;"><input class="ss-input" id="ss-fil-c-rubro" type="text" placeholder="🔍 Rubro…" autocomplete="off" style="font-size:0.82rem;padding:9px 32px 9px 12px;"><button class="ss-btn" type="button" onclick="ssClear('fil-c-rubro')">✕</button><div class="ss-dropdown" id="ss-drop-fil-c-rubro"></div><input type="hidden" id="fil-c-rubro"></div>
                 </div>
                 <div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th style="white-space:nowrap;">Orden</th><th></th></tr></thead><tbody id="lista-c"></tbody></table></div>
             </div>
@@ -555,9 +582,7 @@
                 <div class="card-title">Subcuentas <span id="datos-s-count" style="font-weight:400;color:var(--muted);font-size:0.7rem;"></span></div>
                 <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
                     <input type="text" id="fil-s-buscar" placeholder="🔍 Buscar…" oninput="filtrarDatos('s')" style="font-size:0.82rem;padding:9px 12px;flex:1;min-width:120px;">
-                    <select id="fil-s-cuenta" onchange="filtrarDatos('s')" style="font-size:0.82rem;padding:9px 10px;flex:1;min-width:120px;max-width:200px;">
-                        <option value="">Todas las cuentas</option>
-                    </select>
+                    <div class="ss-wrap" id="ss-wrap-fil-s-cuenta" style="flex:1;min-width:120px;max-width:200px;"><input class="ss-input" id="ss-fil-s-cuenta" type="text" placeholder="🔍 Cuenta…" autocomplete="off" style="font-size:0.82rem;padding:9px 32px 9px 12px;"><button class="ss-btn" type="button" onclick="ssClear('fil-s-cuenta')">✕</button><div class="ss-dropdown" id="ss-drop-fil-s-cuenta"></div><input type="hidden" id="fil-s-cuenta"></div>
                 </div>
                 <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
                     <button class="s-tag-btn active" data-tag="todos"  onclick="setSTag('todos',this)"  style="font-size:0.72rem;padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:var(--ink);color:#fff;cursor:pointer;font-family:inherit;font-weight:600;">Todos</button>
@@ -833,7 +858,10 @@
             <button onclick="confirmarKardex()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:15px;font-size:0.95rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:0.02em;box-shadow:0 4px 14px rgba(26,60,94,0.25);">
                 ✅ Confirmar
             </button>
-            <div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:8px;">La cantidad quedará registrada en el Kardex al guardar el asiento.</div>
+            <button onclick="confirmarKardexSoloCosto()" style="width:100%;background:var(--amber-lt);color:var(--amber);border:1.5px solid #e8c97a;border-radius:10px;padding:11px;font-size:0.85rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;letter-spacing:0.02em;margin-top:8px;">
+                💲 Solo costo, sin unidades
+            </button>
+            <div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:8px;">Usar "Solo costo" para gastos sobre compras que afectan el kardex sin mover unidades.</div>
         </div>
     </div>
 
@@ -953,6 +981,22 @@
             <button id="btn-cancel-pol" class="btn-ghost" style="display:none;margin-top:6px;" onclick="cancelarEdicionPoliza()">Cancelar edición</button>
         </div>
 
+        <!-- Asientos pendientes de polizar -->
+        <div class="card" id="pol-pendientes-card">
+            <div class="card-title" style="cursor:pointer;user-select:none;" onclick="togglePendientesPanel()">
+                <span>⚠ Asientos sin polizar <span id="pol-pend-badge" style="font-weight:700;color:var(--amber);font-size:0.78rem;"></span></span>
+                <span id="pol-pend-arrow" style="font-size:0.75rem;color:var(--amber);">▶</span>
+            </div>
+            <div id="pol-pend-body" style="display:none;">
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>No.</th><th>Fecha</th><th>Concepto</th><th>Pendiente</th><th></th></tr></thead>
+                        <tbody id="pol-pend-lista"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Historial de pólizas -->
         <div class="card">
             <div class="card-title">Historial de Pólizas <span id="pol-hist-count" style="font-weight:400;color:var(--muted);font-size:0.7rem;"></span></div>
@@ -1012,6 +1056,204 @@
         const fireApp = initializeApp(firebaseConfig);
         const fireDB  = getDatabase(fireApp);
 
+
+        // ══════════════════════════════════════════════════════════
+        // SEARCHABLE SELECT COMPONENT
+        // ══════════════════════════════════════════════════════════
+        const _ssData = {};
+
+        // IDs and their onChange callbacks
+        const _ssCb = {
+            'c_padre':      () => { if(typeof sugerirCta==='function') sugerirCta(); },
+            's_padre':      () => { if(typeof sugerirSub==='function') sugerirSub(); },
+            'm_subcuenta':  () => { if(typeof onChangeSub==='function') onChangeSub(); },
+            'm_sub_iva':    () => { if(typeof guardarIvaDefault==='function') guardarIvaDefault(); },
+            'fil-c-rubro':  () => { if(typeof filtrarDatos==='function') filtrarDatos('c'); },
+            'fil-s-cuenta': () => { if(typeof filtrarDatos==='function') filtrarDatos('s'); },
+        };
+
+        function _ssRenderDrop(id, query) {
+            const drop = document.getElementById('ss-drop-' + id);
+            if (!drop) return;
+            const items = _ssData[id] || [];
+            const q = (query || '').toLowerCase().trim();
+            const filtered = q
+                ? items.filter(i => i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q))
+                : items;
+            if (filtered.length === 0) {
+                drop.innerHTML = '<div class="ss-empty">Sin resultados</div>';
+            } else {
+                drop.innerHTML = filtered.map(item => {
+                    const safeVal = item.value.replace(/"/g, '&quot;');
+                    const safeCode = item.code.replace(/"/g, '&quot;');
+                    const safeName = item.name.replace(/"/g, '&quot;');
+                    return `<div class="ss-option" data-value="${safeVal}">
+                        <span class="ss-option-code">${item.code}</span>
+                        <span class="ss-option-name">${item.name}</span>
+                    </div>`;
+                }).join('');
+                // Attach click handlers
+                drop.querySelectorAll('.ss-option').forEach(opt => {
+                    opt.addEventListener('mousedown', e => {
+                        e.preventDefault();
+                        ssSelect(id, opt.dataset.value);
+                    });
+                });
+            }
+        }
+
+        function ssSelect(id, value) {
+            const hidden = document.getElementById(id);
+            const inp = document.getElementById('ss-' + id);
+            const drop = document.getElementById('ss-drop-' + id);
+            const wrap = document.getElementById('ss-wrap-' + id);
+            if (!hidden || !inp) return;
+            hidden.value = value;
+            const item = (_ssData[id] || []).find(i => i.value === value);
+            inp.value = item ? item.code + ' — ' + item.name : value;
+            if (drop) drop.classList.remove('ss-open');
+            if (wrap) wrap.classList.toggle('has-value', !!value);
+            if (_ssCb[id]) _ssCb[id]();
+        }
+
+        function ssGet(id) {
+            const el = document.getElementById(id);
+            return el ? el.value : '';
+        }
+
+        function ssSet(id, value) {
+            const hidden = document.getElementById(id);
+            const inp = document.getElementById('ss-' + id);
+            const wrap = document.getElementById('ss-wrap-' + id);
+            if (!hidden || !inp) return;
+            hidden.value = value || '';
+            if (wrap) wrap.classList.toggle('has-value', !!value);
+            if (!value) { inp.value = ''; return; }
+            const item = (_ssData[id] || []).find(i => i.value === value);
+            inp.value = item ? item.code + ' — ' + item.name : value;
+        }
+
+        function ssReset(id) {
+            ssSet(id, '');
+        }
+
+        function ssLoad(id, items) {
+            _ssData[id] = items;
+            // If there's already a value selected, restore display
+            const val = ssGet(id);
+            if (val) ssSet(id, val);
+        }
+
+        function ssClear(id) {
+            const hidden = document.getElementById(id);
+            const inp = document.getElementById('ss-' + id);
+            const wrap = document.getElementById('ss-wrap-' + id);
+            const drop = document.getElementById('ss-drop-' + id);
+            if (hidden) hidden.value = '';
+            if (inp) inp.value = '';
+            if (wrap) wrap.classList.remove('has-value');
+            if (drop) drop.classList.remove('ss-open');
+            if (_ssCb[id]) _ssCb[id]();
+        }
+
+        // Wire up all searchable selects after DOM ready
+        function _ssInit() {
+            const ids = Object.keys(_ssCb);
+            ids.forEach(id => {
+                const inp = document.getElementById('ss-' + id);
+                const drop = document.getElementById('ss-drop-' + id);
+                if (!inp || !drop) return;
+
+                // Evitar que el blur cancele el click en el botón X (desktop y móvil)
+                const btn = inp.parentElement ? inp.parentElement.querySelector('.ss-btn') : null;
+                if (btn) {
+                    btn.addEventListener('mousedown', e => e.preventDefault());
+                    btn.addEventListener('touchstart', e => { e.preventDefault(); ssClear(id); }, { passive: false });
+                }
+
+                inp.addEventListener('input', () => {
+                    _ssRenderDrop(id, inp.value);
+                    drop.classList.add('ss-open');
+                    // Mientras escribe, ocultar la X (no hay valor confirmado aún)
+                    const wrap = document.getElementById('ss-wrap-' + id);
+                    if (wrap) wrap.classList.remove('has-value');
+                    // Limpiar el valor hidden mientras escribe
+                    const hidden = document.getElementById(id);
+                    if (hidden) hidden.value = '';
+                });
+
+                inp.addEventListener('focus', () => {
+                    _ssRenderDrop(id, inp.value);
+                    drop.classList.add('ss-open');
+                });
+
+                inp.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        drop.classList.remove('ss-open');
+                        const val = ssGet(id);
+                        const wrap = document.getElementById('ss-wrap-' + id);
+                        const hidden = document.getElementById(id);
+                        // Si el input está vacío, limpiar todo (el usuario borró manualmente)
+                        if (!inp.value.trim()) {
+                            if (hidden) hidden.value = '';
+                            if (wrap) wrap.classList.remove('has-value');
+                            inp.value = '';
+                        } else if (val) {
+                            // Hay valor seleccionado: restaurar texto del item
+                            const item = (_ssData[id] || []).find(i => i.value === val);
+                            if (item) inp.value = item.code + ' — ' + item.name;
+                            if (wrap) wrap.classList.add('has-value');
+                        } else {
+                            // Texto escrito pero sin selección: limpiar
+                            inp.value = '';
+                            if (wrap) wrap.classList.remove('has-value');
+                        }
+                    }, 200);
+                });
+
+                inp.addEventListener('keydown', e => {
+                    const opts = drop.querySelectorAll('.ss-option');
+                    let cur = drop.querySelector('.ss-option.ss-hi');
+                    let idx = cur ? Array.from(opts).indexOf(cur) : -1;
+                    if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (cur) cur.classList.remove('ss-hi');
+                        idx = Math.min(idx + 1, opts.length - 1);
+                        if (opts[idx]) { opts[idx].classList.add('ss-hi'); opts[idx].scrollIntoView({block:'nearest'}); }
+                    } else if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (cur) cur.classList.remove('ss-hi');
+                        idx = Math.max(idx - 1, 0);
+                        if (opts[idx]) { opts[idx].classList.add('ss-hi'); opts[idx].scrollIntoView({block:'nearest'}); }
+                    } else if (e.key === 'Enter' && cur) {
+                        e.preventDefault();
+                        ssSelect(id, cur.dataset.value);
+                    } else if (e.key === 'Escape') {
+                        drop.classList.remove('ss-open');
+                        inp.blur();
+                    }
+                });
+            });
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', e => {
+                ids.forEach(id => {
+                    const wrap = document.getElementById('ss-wrap-' + id);
+                    const drop = document.getElementById('ss-drop-' + id);
+                    if (drop && wrap && !wrap.contains(e.target)) {
+                        drop.classList.remove('ss-open');
+                    }
+                });
+            });
+        }
+
+        // Add keyboard highlight style
+        (function() {
+            const s = document.createElement('style');
+            s.textContent = '.ss-option.ss-hi { background: #eef4fb; }';
+            document.head.appendChild(s);
+        })();
+
         let db = { rubros:[], cuentas:[], subcuentas:[], asientos:[], movimientos:[], kardex:[], polizas:[], config:{ivaDefault:""} };
         let editIdx = { r:null, c:null, s:null, a:null };
         let tempMovimientos = [];
@@ -1044,11 +1286,13 @@
                 }
                 setSyncStatus('online'); firebaseListo=true;
                 document.getElementById('loading-overlay').classList.add('hidden');
+                _ssInit();
                 renderizar();
                 if(document.getElementById('win-asientos').classList.contains('active') && editIdx.a===null) iniciarAsiento();
             }, (err)=>{
                 console.error(err); setSyncStatus('offline');
                 document.getElementById('loading-overlay').classList.add('hidden');
+                _ssInit();
             });
         })();
 
@@ -1071,7 +1315,7 @@
             if(el) el.classList.add('active');
             if(id==='win-asientos'&&editIdx.a===null) iniciarAsiento();
             if(id==='win-reportes'){ if(!document.getElementById('rep_fi').value) resetPeriodo(); else vistaReporte(); }
-            if(id==='win-polizas'){ if(!document.getElementById('pol_fecha').value){const hoy=new Date();document.getElementById('pol_fecha').value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');} if(typeof syncPolConfigUI==='function') syncPolConfigUI(); if(typeof filtrarPolizas==='function') filtrarPolizas(); }
+            if(id==='win-polizas'){ if(!document.getElementById('pol_fecha').value){const hoy=new Date();document.getElementById('pol_fecha').value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');} if(typeof syncPolConfigUI==='function') syncPolConfigUI(); if(typeof filtrarPolizas==='function') filtrarPolizas(); if(typeof renderPendientes==='function') renderPendientes(); }
             renderizar();
         };
 
@@ -1131,6 +1375,10 @@
                                 if(m.subcuenta&&m.subcuenta.startsWith(oldCuentaCod))
                                     m.subcuenta=newCuentaCod+m.subcuenta.slice(oldCuentaCod.length);
                             });
+                            (db.polizas||[]).forEach(pol=>{(pol.movimientos||[]).forEach(m=>{
+                                if(m.subcuenta&&m.subcuenta.startsWith(oldCuentaCod))
+                                    m.subcuenta=newCuentaCod+m.subcuenta.slice(oldCuentaCod.length);
+                            });});
                             c.codigo=newCuentaCod;
                             c.rubroPadre=cod;
                         }
@@ -1177,7 +1425,7 @@
 
         /* CUENTAS */
         window.guardarCuenta=async function(){
-            const p=document.getElementById('c_padre').value;
+            const p=ssGet('c_padre');
             const nom=document.getElementById('c_nom').value.trim();
             if(!p){showError("Selecciona el rubro padre.");return;}
             if(!nom){showError("Ingresa un nombre.");return;}
@@ -1208,14 +1456,9 @@
                 }
                 await guardarDB();finalizar('c');
             } else {
-                // Crear nueva — determinar posición
+                // Crear nueva — siempre al final
                 const grupo=db.cuentas.filter(c=>c.rubroPadre===p).sort((a,b)=>a.codigo.localeCompare(b.codigo));
-                const posEl=document.getElementById('c_pos_sel');
-                const posVal=parseInt(posEl.value);
-                // Asignar _orden temporal para renumerar
-                grupo.forEach((c,i)=>c._orden=i>=posVal?i+2:i);
-                const newOrd=posVal*2+1; // solo necesitamos que quede en la posición correcta
-                // Código provisional para insertar
+                const posVal=grupo.length;
                 const suf=document.getElementById('c_cod_suf').value.trim()||"000";
                 const tmpCod=p+suf;
                 const obj={codigo:tmpCod,nombre:nom,rubroPadre:p,nat,_orden:posVal};
@@ -1243,13 +1486,16 @@
         };
         window.editarC=function(i){
             editIdx.c=i;const x=db.cuentas[i];
-            document.getElementById('c_padre').value=x.rubroPadre;
             document.getElementById('c_cod_suf').value=x.codigo.replace(x.rubroPadre,"");
             document.getElementById('c_cod_display').value=x.codigo;
             document.getElementById('c_nom').value=x.nombre;document.getElementById('c_nat').value=x.nat;
             document.getElementById('label-edit-c').style.display='inline';document.getElementById('btn-cancel-c').style.display='block';
-            document.getElementById('c_pos_row').style.display='none';
             switchWin('win-cuentas',document.querySelectorAll('.tab-item')[1]);
+            // Asignar padre DESPUÉS de switchWin/renderAll para que no se pierda la selección
+            setTimeout(function(){
+                ssGet('c_padre')=x.rubroPadre;
+                sugerirCta();
+            },0);
         };
         window.moverCuenta=async function(i,dir){
             const c=db.cuentas[i];const p=c.rubroPadre;
@@ -1257,18 +1503,37 @@
             const pos=grupo.findIndex(x=>x._gi===i);
             const newPos=pos+dir;
             if(newPos<0||newPos>=grupo.length)return;
-            // Swap _orden
+            // Determinar nuevo orden
             grupo.forEach((x,j)=>x._orden=j);
             grupo[pos]._orden=newPos+0.5*dir;
             grupo.sort((a,b)=>a._orden-b._orden);
+            // PASO 1: recopilar todos los cambios necesarios sin aplicarlos aún
+            const cambios=[]; // [{realX, oldCod, newCod}]
             grupo.forEach((x,j)=>{
                 const newCod=p+String(j+1).padStart(3,'0');
                 const realX=db.cuentas[x._gi];
-                if(realX.codigo!==newCod){
-                    db.subcuentas.forEach(s=>{if(s.cuentaPadre===realX.codigo){s.cuentaPadre=newCod;s.codigo=newCod+s.codigo.slice(realX.codigo.length);}});
-                    db.movimientos.forEach(m=>{if(m.subcuenta&&m.subcuenta.startsWith(realX.codigo))m.subcuenta=newCod+m.subcuenta.slice(realX.codigo.length);});
-                    realX.codigo=newCod;
-                }
+                if(realX.codigo!==newCod) cambios.push({realX, oldCod:realX.codigo, newCod});
+            });
+            // PASO 2: usar un prefijo temporal para evitar colisiones entre cuentas que se intercambian
+            const tmp='__TMP__';
+            cambios.forEach(({realX,oldCod})=>{
+                // Marcar subcuentas con prefijo temporal
+                db.subcuentas.forEach(s=>{if(s.cuentaPadre===oldCod){s.cuentaPadre=tmp+oldCod;s.codigo=tmp+s.codigo;}});
+                db.movimientos.forEach(m=>{if(m.subcuenta&&m.subcuenta.startsWith(oldCod))m.subcuenta=tmp+m.subcuenta;});
+                (db.polizas||[]).forEach(pol=>{(pol.movimientos||[]).forEach(m=>{if(m.subcuenta&&m.subcuenta.startsWith(oldCod))m.subcuenta=tmp+m.subcuenta;});});
+                realX.codigo=tmp+oldCod;
+            });
+            // PASO 3: aplicar códigos finales reemplazando el prefijo temporal
+            cambios.forEach(({realX,oldCod,newCod})=>{
+                db.subcuentas.forEach(s=>{
+                    if(s.cuentaPadre===tmp+oldCod){
+                        s.cuentaPadre=newCod;
+                        s.codigo=newCod+s.codigo.slice((tmp+oldCod).length);
+                    }
+                });
+                db.movimientos.forEach(m=>{if(m.subcuenta&&m.subcuenta.startsWith(tmp+oldCod))m.subcuenta=newCod+m.subcuenta.slice((tmp+oldCod).length);});
+                (db.polizas||[]).forEach(pol=>{(pol.movimientos||[]).forEach(m=>{if(m.subcuenta&&m.subcuenta.startsWith(tmp+oldCod))m.subcuenta=newCod+m.subcuenta.slice((tmp+oldCod).length);});});
+                realX.codigo=newCod;
             });
             await guardarDB();
         };
@@ -1276,7 +1541,7 @@
 
         /* SUBCUENTAS */
         window.guardarSubcuenta=async function(){
-            const p=document.getElementById('s_padre').value;
+            const p=ssGet('s_padre');
             const nom=document.getElementById('s_nom').value.trim();
             if(!p){showError("Selecciona la cuenta padre.");return;}
             if(!nom){showError("Ingresa un nombre.");return;}
@@ -1295,8 +1560,7 @@
                 await guardarDB();finalizar('s');
             } else {
                 const grupo=db.subcuentas.filter(s=>s.cuentaPadre===p).sort((a,b)=>a.codigo.localeCompare(b.codigo));
-                const posEl=document.getElementById('s_pos_sel');
-                const posVal=parseInt(posEl.value);
+                const posVal=grupo.length;
                 const suf=document.getElementById('s_cod_suf').value.trim()||"000";
                 const tmpCod=p+suf;
                 const obj={codigo:tmpCod,nombre:nom,cuentaPadre:p,pyg,inv,is_iva,_orden:posVal};
@@ -1316,14 +1580,17 @@
         };
         window.editarS=function(i){
             editIdx.s=i;const x=db.subcuentas[i];
-            document.getElementById('s_padre').value=x.cuentaPadre;
             document.getElementById('s_cod_suf').value=x.codigo.replace(x.cuentaPadre,"");
             document.getElementById('s_cod_display').value=x.codigo;
             document.getElementById('s_nom').value=x.nombre;document.getElementById('s_pyg').checked=x.pyg||false;
             document.getElementById('s_inv').checked=x.inv||false;document.getElementById('s_is_iva').checked=x.is_iva||false;
             document.getElementById('label-edit-s').style.display='inline';document.getElementById('btn-cancel-s').style.display='block';
-            document.getElementById('s_pos_row').style.display='none';
             switchWin('win-subs',document.querySelectorAll('.tab-item')[2]);
+            // Asignar padre DESPUÉS de switchWin/renderAll para que no se pierda la selección
+            setTimeout(function(){
+                ssGet('s_padre')=x.cuentaPadre;
+                sugerirSub();
+            },0);
         };
         window.moverSubcuenta=async function(i,dir){
             const s=db.subcuentas[i];const p=s.cuentaPadre;
@@ -1334,13 +1601,25 @@
             grupo.forEach((x,j)=>x._orden=j);
             grupo[pos]._orden=newPos+0.5*dir;
             grupo.sort((a,b)=>a._orden-b._orden);
+            // PASO 1: recopilar cambios
+            const cambios=[];
             grupo.forEach((x,j)=>{
                 const newCod=p+String(j+1).padStart(3,'0');
                 const realX=db.subcuentas[x._gi];
-                if(realX.codigo!==newCod){
-                    db.movimientos.forEach(m=>{if(m.subcuenta===realX.codigo)m.subcuenta=newCod;});
-                    realX.codigo=newCod;
-                }
+                if(realX.codigo!==newCod) cambios.push({realX, oldCod:realX.codigo, newCod});
+            });
+            // PASO 2: marcar con prefijo temporal para evitar colisiones
+            const tmp='__TMP__';
+            cambios.forEach(({realX,oldCod})=>{
+                db.movimientos.forEach(m=>{if(m.subcuenta===oldCod)m.subcuenta=tmp+oldCod;});
+                (db.polizas||[]).forEach(pol=>{(pol.movimientos||[]).forEach(m=>{if(m.subcuenta===oldCod)m.subcuenta=tmp+oldCod;});});
+                realX.codigo=tmp+oldCod;
+            });
+            // PASO 3: aplicar códigos finales
+            cambios.forEach(({realX,oldCod,newCod})=>{
+                db.movimientos.forEach(m=>{if(m.subcuenta===tmp+oldCod)m.subcuenta=newCod;});
+                (db.polizas||[]).forEach(pol=>{(pol.movimientos||[]).forEach(m=>{if(m.subcuenta===tmp+oldCod)m.subcuenta=newCod;});});
+                realX.codigo=newCod;
             });
             await guardarDB();
         };
@@ -1353,7 +1632,7 @@
             document.getElementById('a_no').value=m+1;
             if(!document.getElementById('a_fecha').value){const hoy=new Date();document.getElementById('a_fecha').value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');}
         }
-        window.guardarIvaDefault=function(){db.config.ivaDefault=document.getElementById('m_sub_iva').value;guardarDB();};
+        window.guardarIvaDefault=function(){db.config.ivaDefault=ssGet('m_sub_iva');guardarDB();};
 
         /* ══════════════════════════════════════════
            INVENTARIOS PERPETUOS — KARDEX
@@ -1466,15 +1745,18 @@
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:14px;font-size:0.78rem;">Sin movimientos previos</td></tr>';
                 document.getElementById('kardex-saldo-actual').innerHTML = '';
             } else {
-                tbody.innerHTML = rows.map(r => `
-                    <tr style="border-bottom:1px solid #f2f0ec;">
+                tbody.innerHTML = rows.map(r => {
+                    const soloCosto = r.qty === 0;
+                    const entCol = r.esEnt ? (soloCosto ? '<span style="font-size:0.65rem;color:var(--amber);font-weight:700;">💲costo</span>' : r.qty.toFixed(3)) : '';
+                    const salCol = !r.esEnt ? (soloCosto ? '<span style="font-size:0.65rem;color:var(--amber);font-weight:700;">💲costo</span>' : r.qty.toFixed(3)) : '';
+                    return `<tr style="border-bottom:1px solid #f2f0ec;${soloCosto?'background:#fdf5e6;':''}">
                         <td style="padding:6px 8px;white-space:nowrap;font-size:0.72rem;">${r.fecha}</td>
-                        <td style="padding:6px 8px;text-align:right;color:var(--green);font-weight:600;">${r.esEnt ? r.qty.toFixed(3) : ''}</td>
-                        <td style="padding:6px 8px;text-align:right;color:var(--red);font-weight:600;">${!r.esEnt ? r.qty.toFixed(3) : ''}</td>
+                        <td style="padding:6px 8px;text-align:right;color:var(--green);font-weight:600;">${entCol}</td>
+                        <td style="padding:6px 8px;text-align:right;color:var(--red);font-weight:600;">${salCol}</td>
                         <td style="padding:6px 8px;text-align:right;font-weight:700;color:var(--accent);">${r.existencia.toFixed(3)}</td>
                         <td style="padding:6px 8px;text-align:right;color:var(--muted);font-size:0.7rem;">${r.costoUnit > 0 ? '$'+r.costoUnit.toFixed(2) : '—'}</td>
                         <td style="padding:6px 8px;text-align:right;font-weight:600;color:var(--amber);">${'$'+r.costoProm.toFixed(2)}</td>
-                    </tr>`).join('');
+                    </tr>`;}).join('');
                 const last = rows[rows.length - 1];
                 document.getElementById('kardex-saldo-actual').innerHTML = `
                     <div style="flex:1;background:var(--green-lt);border:1.5px solid #a7d9c0;border-radius:7px;padding:8px 10px;text-align:center;">
@@ -1556,9 +1838,19 @@
             callback(qty);
         };
 
+        // ── Solo costo, sin unidades (gastos sobre compras) ──
+        window.confirmarKardexSoloCosto = function() {
+            if (!kardexPendiente) return;
+            const callback = kardexPendiente.callback;
+            document.getElementById('modal-kardex-overlay').style.display = 'none';
+            kardexPendiente = null;
+            // Cantidad 0 = solo refleja costo en kardex, sin mover existencias
+            callback(0);
+        };
+
         // ── Detectar subcuenta de inventario al seleccionar ──
         window.onChangeSub = function() {
-            const cs = document.getElementById('m_subcuenta').value;
+            const cs = ssGet('m_subcuenta');
             const hint = document.getElementById('inv-hint-sub');
             if (!hint) return;
             if (cs && esPerpetuo() && esSubInv(cs)) {
@@ -1570,7 +1862,7 @@
 
         // ── agregarConIVA: agrega directamente, kardex se pide al guardar ──
         window.agregarConIVA=function(modo){
-            const cm=document.getElementById('m_subcuenta').value,ci=document.getElementById('m_sub_iva').value;
+            const cm=ssGet('m_subcuenta'),ci=ssGet('m_sub_iva');
             const d=parseFloat(document.getElementById('m_debe').value)||0,h=parseFloat(document.getElementById('m_haber').value)||0;
             if(!cm){showError("Selecciona la subcuenta principal.");return;}if(!ci){showError("Selecciona una cuenta de IVA.");return;}
             if(d===0&&h===0){showError("Ingresa un importe.");return;}if(d>0&&h>0){showError("No puede tener Debe y Haber a la vez.");return;}
@@ -1580,19 +1872,19 @@
             const md=db.subcuentas.find(s=>s.codigo===cm),mi=db.subcuentas.find(s=>s.codigo===ci);
             tempMovimientos.push({subcuenta:cm,nombre:md?md.nombre:"",debe:esd?sub:0,haber:!esd?sub:0,esInv:esPerpetuo()&&esSubInv(cm)});
             tempMovimientos.push({subcuenta:ci,nombre:mi?mi.nombre:"",debe:esd?iva:0,haber:!esd?iva:0});
-            document.getElementById('m_subcuenta').value="";document.getElementById('m_sub_iva').value="";
+            ssReset('m_subcuenta');ssReset('m_sub_iva');
             document.getElementById('m_debe').value="";document.getElementById('m_haber').value="";
             renderTempMovimientos();window.showSuccess('Movimiento agregado');
         };
 
         // ── agregarMovimientoNormal: agrega directamente, kardex se pide al guardar ──
         window.agregarMovimientoNormal=function(){
-            const cs=document.getElementById('m_subcuenta').value;
+            const cs=ssGet('m_subcuenta');
             const d=parseFloat(document.getElementById('m_debe').value)||0,h=parseFloat(document.getElementById('m_haber').value)||0;
             if(!cs){showError("Selecciona una subcuenta.");return;}if(d===0&&h===0){showError("Ingresa un importe.");return;}if(d>0&&h>0){showError("No puede tener Debe y Haber a la vez.");return;}
             const sd=db.subcuentas.find(s=>s.codigo===cs);
             tempMovimientos.push({subcuenta:cs,nombre:sd?sd.nombre:"",debe:d,haber:h,esInv:esPerpetuo()&&esSubInv(cs)});
-            document.getElementById('m_subcuenta').value="";document.getElementById('m_debe').value="";document.getElementById('m_haber').value="";
+            ssReset('m_subcuenta');document.getElementById('m_debe').value="";document.getElementById('m_haber').value="";
             renderTempMovimientos();checkHintPyG();
         };
 
@@ -1622,7 +1914,11 @@
             else{tb.innerHTML=tempMovimientos.map((m,i)=>{sd+=m.debe;sh+=m.haber;
                 let badge='';
                 if(m.esInv && m.cantidadKardex!=null){
-                    badge=`<span style="font-size:0.63rem;background:#e8f5ef;color:var(--green);border:1px solid #a7d9c0;border-radius:6px;padding:1px 5px;margin-left:4px;">📦 ${Number(m.cantidadKardex).toFixed(3)}</span>`;
+                    if(m.cantidadKardex === 0){
+                        badge='<span style="font-size:0.63rem;background:var(--amber-lt);color:var(--amber);border:1px solid #e8c97a;border-radius:6px;padding:1px 5px;margin-left:4px;">💲 solo costo</span>';
+                    } else {
+                        badge=`<span style="font-size:0.63rem;background:#e8f5ef;color:var(--green);border:1px solid #a7d9c0;border-radius:6px;padding:1px 5px;margin-left:4px;">📦 ${Number(m.cantidadKardex).toFixed(3)}</span>`;
+                    }
                 } else if(m.esInv){
                     badge='<span style="font-size:0.63rem;background:var(--amber-lt);color:var(--amber);border:1px solid #e8c97a;border-radius:6px;padding:1px 5px;margin-left:4px;">📦 pendiente</span>';
                 }
@@ -1702,7 +1998,9 @@
             tempMovimientos.forEach(m=>{
                 db.movimientos.push({idAsiento:id,noAsiento:no,subcuenta:m.subcuenta,debe:m.debe,haber:m.haber});
                 if(m.cantidadKardex!=null){
-                    db.kardex.push({idAsiento:id,subcuenta:m.subcuenta,cantidad:m.cantidadKardex});
+                    // cantidad=0 significa "solo costo" (gastos sobre compras): se registra en kardex
+                    // para reflejar el costo adicional sin mover existencias
+                    db.kardex.push({idAsiento:id,subcuenta:m.subcuenta,cantidad:m.cantidadKardex,soloCosto:m.cantidadKardex===0});
                 }
             });
             await guardarDB();
@@ -1761,8 +2059,8 @@
         function finalizar(t){
             const msgs = { r:'Rubro guardado', c:'Cuenta guardada', s:'Subcuenta guardada' };
             if(t==='r'){document.getElementById('r_cod').value='';document.getElementById('r_nom').value='';editIdx.r=null;document.getElementById('label-edit-r').style.display='none';document.getElementById('btn-cancel-r').style.display='none';document.querySelectorAll('.ef-check').forEach(c=>c.checked=false);}
-            if(t==='c'){resetManualCta();document.getElementById('c_nom').value='';editIdx.c=null;document.getElementById('label-edit-c').style.display='none';document.getElementById('btn-cancel-c').style.display='none';document.getElementById('c_auto_sub').checked=false;document.getElementById('c_pos_row').style.display='none';sugerirCta();}
-            if(t==='s'){resetManualSub();document.getElementById('s_nom').value='';editIdx.s=null;document.getElementById('label-edit-s').style.display='none';document.getElementById('btn-cancel-s').style.display='none';document.getElementById('s_pyg').checked=false;document.getElementById('s_inv').checked=false;document.getElementById('s_is_iva').checked=false;document.getElementById('s_pos_row').style.display='none';sugerirSub();}
+            if(t==='c'){document.getElementById('c_nom').value='';editIdx.c=null;document.getElementById('label-edit-c').style.display='none';document.getElementById('btn-cancel-c').style.display='none';}
+            if(t==='s'){document.getElementById('s_nom').value='';editIdx.s=null;document.getElementById('label-edit-s').style.display='none';document.getElementById('btn-cancel-s').style.display='none';}
             window.showSuccess(msgs[t] || 'Guardado');
         }
 
@@ -1772,8 +2070,6 @@
             document.querySelectorAll('.btn-ghost').forEach(b=>{if(b.id&&b.id.startsWith('btn-cancel'))b.style.display='none';});
             ['r_cod','r_nom','c_nom','s_nom'].forEach(id=>document.getElementById(id).value='');
             resetManualCta();resetManualSub();
-            document.getElementById('c_pos_row').style.display='none';
-            document.getElementById('s_pos_row').style.display='none';
         };
 
         /* RENDER */
@@ -1784,37 +2080,39 @@
             // Row builder with reorder arrows
             const fR=(cod,nom,e,d,mu,md)=>`<tr><td class="td-code">${cod}</td><td>${nom}</td><td><div class="action-btns"><button class="btn-icon btn-ghost" style="font-size:0.7rem;padding:4px 6px;" onclick="${mu}" title="Subir">↑</button><button class="btn-icon btn-ghost" style="font-size:0.7rem;padding:4px 6px;" onclick="${md}" title="Bajar">↓</button></div></td><td><div class="action-btns"><button class="btn-icon btn-edit-icon" onclick="${e}">✏</button><button class="btn-icon btn-del-icon" onclick="${d}">🗑</button></div></td></tr>`;
 
-            // Populate filter dropdowns
-            const filCR = document.getElementById('fil-c-rubro');
-            const prevCR = filCR ? filCR.value : '';
-            if(filCR){ filCR.innerHTML = '<option value="">Todos los rubros</option>' + db.rubros.map(r=>`<option value="${r.codigo}">${r.codigo} — ${r.nombre}</option>`).join(''); filCR.value = prevCR; }
-            const filSC = document.getElementById('fil-s-cuenta');
-            const prevSC = filSC ? filSC.value : '';
-            if(filSC){ filSC.innerHTML = '<option value="">Todas las cuentas</option>' + db.cuentas.map(c=>`<option value="${c.codigo}">${c.codigo} — ${c.nombre}</option>`).join(''); filSC.value = prevSC; }
+            // Populate searchable selects (filter dropdowns)
+            const prevCR = ssGet('fil-c-rubro');
+            const prevSC = ssGet('fil-s-cuenta');
+            ssLoad('fil-c-rubro', db.rubros.map(r=>({value:r.codigo, code:r.codigo, name:r.nombre})));
+            ssLoad('fil-s-cuenta', db.cuentas.map(c=>({value:c.codigo, code:c.codigo, name:c.nombre})));
+            if(prevCR) ssSet('fil-c-rubro', prevCR);
+            if(prevSC) ssSet('fil-s-cuenta', prevSC);
             // Re-render filtered lists
             filtrarDatos('r'); filtrarDatos('c'); filtrarDatos('s'); filtrarDatos('a');
             syncConfigInvUI();
 
-            document.getElementById('c_padre').innerHTML='<option value="">Seleccione un rubro…</option>'+db.rubros.map(r=>`<option value="${r.codigo}">${r.codigo} — ${r.nombre}</option>`).join('');
-            document.getElementById('s_padre').innerHTML='<option value="">Seleccione una cuenta…</option>'+db.cuentas.map(c=>`<option value="${c.codigo}">${c.codigo} — ${c.nombre}</option>`).join('');
+            // Populate form searchable selects
+            ssLoad('c_padre', db.rubros.map(r=>({value:r.codigo, code:r.codigo, name:r.nombre})));
+            ssLoad('s_padre', db.cuentas.map(c=>({value:c.codigo, code:c.codigo, name:c.nombre})));
 
-            // Preservar selección actual antes de reconstruir selects de movimiento
-            const prevSubcta = document.getElementById('m_subcuenta').value;
-            document.getElementById('m_subcuenta').innerHTML='<option value="">Seleccione subcuenta…</option>'+db.subcuentas.map(s=>`<option value="${s.codigo}">${s.codigo} — ${s.nombre}</option>`).join('');
-            if(prevSubcta) document.getElementById('m_subcuenta').value = prevSubcta;
+            // Preservar selección actual de movimiento
+            const prevSubcta = ssGet('m_subcuenta');
+            ssLoad('m_subcuenta', db.subcuentas.map(s=>({value:s.codigo, code:s.codigo, name:s.nombre})));
+            if(prevSubcta) ssSet('m_subcuenta', prevSubcta);
 
             const iv=db.subcuentas.filter(s=>s.is_iva);
-            const prevIva = document.getElementById('m_sub_iva').value;
-            document.getElementById('m_sub_iva').innerHTML=iv.length>0?'<option value="">Seleccione cuenta de IVA…</option>'+iv.map(s=>`<option value="${s.codigo}" ${db.config.ivaDefault===s.codigo?'selected':''}>${s.codigo} — ${s.nombre}</option>`).join(''):'<option value="">— Configura una cuenta de IVA primero —</option>';
-            if(prevIva) document.getElementById('m_sub_iva').value = prevIva;
+            const prevIva = ssGet('m_sub_iva');
+            ssLoad('m_sub_iva', iv.map(s=>({value:s.codigo, code:s.codigo, name:s.nombre})));
+            if(prevIva) ssSet('m_sub_iva', prevIva);
+            else if(db.config.ivaDefault) ssSet('m_sub_iva', db.config.ivaDefault);
 
             sugerirCta();sugerirSub();
             if(typeof syncPolConfigUI==='function') syncPolConfigUI();
-            if(typeof filtrarPolizas==='function') filtrarPolizas();
+            if(typeof filtrarPolizas==='function') filtrarPolizas(); if(typeof renderPendientes==='function') renderPendientes();
         };
 
         window.sugerirCta=function(){
-            const p=document.getElementById('c_padre').value;
+            const p=ssGet('c_padre');
             const manualRow=document.getElementById('c_manual_row');
             const isManual=manualRow.style.display!=='none';
             if(!p){document.getElementById('sug_c').innerText="";document.getElementById('c_cod_display').value="";return;}
@@ -1826,21 +2124,10 @@
                 document.getElementById('c_cod_suf').value=n;
                 document.getElementById('c_cod_display').value=p+n;
             }
-            // Populate position selector (only when creating new)
-            const posRow=document.getElementById('c_pos_row');
-            const posEl=document.getElementById('c_pos_sel');
-            if(editIdx.c===null){
-                posRow.style.display='block';
-                const sorted=h.slice().sort((a,b)=>a.codigo.localeCompare(b.codigo));
-                posEl.innerHTML=sorted.map((c,i)=>`<option value="${i}">${i+1}. Antes de ${c.codigo} — ${c.nombre}</option>`).join('')
-                    +`<option value="${sorted.length}" selected>${sorted.length+1}. Al final (por defecto)</option>`;
-                posEl.value=String(sorted.length);
-            } else {
-                posRow.style.display='none';
-            }
+
         };
         window.syncDisplayCta=function(){
-            const p=document.getElementById('c_padre').value;
+            const p=ssGet('c_padre');
             const suf=document.getElementById('c_cod_suf').value.trim();
             document.getElementById('c_cod_display').value=p?p+suf:suf;
         };
@@ -1852,7 +2139,7 @@
             if(vis) sugerirCta(); // reset to auto
         };
         window.sugerirSub=function(){
-            const p=document.getElementById('s_padre').value;
+            const p=ssGet('s_padre');
             const manualRow=document.getElementById('s_manual_row');
             const isManual=manualRow.style.display!=='none';
             if(!p){document.getElementById('sug_s').innerText="";document.getElementById('s_cod_display').value="";return;}
@@ -1864,21 +2151,10 @@
                 document.getElementById('s_cod_suf').value=n;
                 document.getElementById('s_cod_display').value=p+n;
             }
-            // Populate position selector (only when creating new)
-            const posRow=document.getElementById('s_pos_row');
-            const posEl=document.getElementById('s_pos_sel');
-            if(editIdx.s===null){
-                posRow.style.display='block';
-                const sorted=h.slice().sort((a,b)=>a.codigo.localeCompare(b.codigo));
-                posEl.innerHTML=sorted.map((c,i)=>`<option value="${i}">${i+1}. Antes de ${c.codigo} — ${c.nombre}</option>`).join('')
-                    +`<option value="${sorted.length}" selected>${sorted.length+1}. Al final (por defecto)</option>`;
-                posEl.value=String(sorted.length);
-            } else {
-                posRow.style.display='none';
-            }
+
         };
         window.syncDisplaySub=function(){
-            const p=document.getElementById('s_padre').value;
+            const p=ssGet('s_padre');
             const suf=document.getElementById('s_cod_suf').value.trim();
             document.getElementById('s_cod_display').value=p?p+suf:suf;
         };
@@ -1933,8 +2209,8 @@
 
             } else if (t === 'c') {
                 const q = (document.getElementById('fil-c-buscar').value || '').toLowerCase();
-                const rFil = document.getElementById('fil-c-rubro').value;
-                let rows = db.cuentas.map((c, i) => ({...c, _i: i}));
+                const rFil = ssGet('fil-c-rubro');
+                let rows = db.cuentas.map((c, i) => ({...c, _i: i})).sort((a,b)=>a.codigo.localeCompare(b.codigo));
                 if (q) rows = rows.filter(c => c.codigo.toLowerCase().includes(q) || c.nombre.toLowerCase().includes(q));
                 if (rFil) rows = rows.filter(c => c.rubroPadre === rFil);
                 const fR = (cod, nom, i) => `<tr><td class="td-code">${cod}</td><td>${nom}</td><td><div class="action-btns"><button class="btn-icon btn-ghost" style="font-size:0.7rem;padding:4px 6px;" onclick="moverCuenta(${i},-1)" title="Subir">↑</button><button class="btn-icon btn-ghost" style="font-size:0.7rem;padding:4px 6px;" onclick="moverCuenta(${i},1)" title="Bajar">↓</button></div></td><td><div class="action-btns"><button class="btn-icon btn-edit-icon" onclick="editarC(${i})">✏</button><button class="btn-icon btn-del-icon" onclick="eliminarC(${i})">🗑</button></div></td></tr>`;
@@ -1943,8 +2219,8 @@
 
             } else if (t === 's') {
                 const q = (document.getElementById('fil-s-buscar').value || '').toLowerCase();
-                const cFil = document.getElementById('fil-s-cuenta').value;
-                let rows = db.subcuentas.map((s, i) => ({...s, _i: i}));
+                const cFil = ssGet('fil-s-cuenta');
+                let rows = db.subcuentas.map((s, i) => ({...s, _i: i})).sort((a,b)=>a.codigo.localeCompare(b.codigo));
                 if (q) rows = rows.filter(s => s.codigo.toLowerCase().includes(q) || s.nombre.toLowerCase().includes(q));
                 if (cFil) rows = rows.filter(s => s.cuentaPadre === cFil);
                 if (sTagActivo === 'pyg') rows = rows.filter(s => s.pyg);
@@ -2395,7 +2671,7 @@
             if(tipo==='catalogo')   { html=buildCatalogo();                      titulo='Catalogo_Cuentas'; }
             if(tipo==='resultados') { html=buildEstadoResultadosHTML(fechas);     titulo='Estado_Resultados_'+fechas.fi+'_a_'+fechas.ff; }
             if(tipo==='balance')    { html=buildBalanceGeneralHTML(fechas);       titulo='Balance_General_'+fechas.fi+'_a_'+fechas.ff; }
-            if(html) await abrirPDF(html, titulo);
+            if(html) abrirPDF(html, titulo, tipo==='balance' ? 'landscape' : 'portrait');
         };
 
         // ── Dispatcher principal ──────────────────────────────────
@@ -2413,7 +2689,7 @@
             if (tipo === 'catalogo'){ html = buildCatalogo();                      titulo = 'Catálogo de Cuentas'; filename = 'catalogo_cuentas'; }
 
             if (!html) return;
-            if (formato === 'pdf') await abrirPDF(html, titulo);
+            if (formato === 'pdf') abrirPDF(html, titulo);
             else exportarXLSX(html, titulo, filename + '.xlsx');
         };
 
@@ -2651,7 +2927,8 @@
                 tr.spacer-row td { padding: 6px 0; border-bottom: none; }
                 tr.pyg-row td { background: #f0fdf4; }
                 @media print {
-                    body { padding: 10px; font-size: 9px; }
+                    body { padding: 10px; font-size: 9px; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     .no-print { display: none !important; }
                     th  { background: #1a3c5e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
                     tr.enc-row  td { background: #dce8f5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -2671,105 +2948,27 @@
         // ══════════════════════════════════════════════════════════
         // PDF
         // ══════════════════════════════════════════════════════════
-        async function abrirPDF(html, titulo) {
-            titulo = titulo || 'reporte';
-            // Márgenes: aumentar margen izquierdo y eliminar margen derecho
-            const ML = 15, MR = 8, MT = 15, MB = 15; // mm
-
-            const { jsPDF } = window.jspdf;
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
-            const usableW = pdf.internal.pageSize.getWidth() - ML - MR; // ~190mm
-            const usableH = pdf.internal.pageSize.getHeight() - MT - MB;
-            // Render width proporcional al ancho útil (alto res)
-            const RENDER_W = Math.round(usableW * 5.0); // reducir factor para evitar recortes
-
-            const iframe = document.createElement('iframe');
-            iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + RENDER_W + 'px;height:auto;border:none;';
-            document.body.appendChild(iframe);
-            iframe.contentDocument.open();
-            iframe.contentDocument.write(html.replace(/<button[^>]*class="no-print"[^>]*>.*?<\/button>/gi, ''));
-            iframe.contentDocument.close();
-            await new Promise(r => { iframe.onload = r; setTimeout(r, 1500); });
-            try {
-                const body = iframe.contentDocument.body;
-                body.style.width = RENDER_W + 'px';
-                body.style.margin = '0';
-                body.style.padding = '0';
-                body.style.paddingTop = '18px';
-                // Ajustar dinámicamente filas vacías para que la tabla cubra la hoja
-                try {
-                    const pxPerMm = RENDER_W / usableW; // px por mm en el render
-                    const targetPx = usableH * pxPerMm; // altura objetivo en px
-                    const footerMm = 70; // espacio reservado para totales, concepto y firmas (mm)
-                    const reservePx = footerMm * pxPerMm;
-                    // forzar tamaño del body al área útil y permitir posicionamiento absoluto
-                    body.style.position = 'relative';
-                    body.style.height = Math.round(targetPx) + 'px';
-                    const table = iframe.contentDocument.querySelector('table');
-                    if (table) {
-                        const rows = table.querySelectorAll('tr');
-                        let totalsRow = null;
-                        rows.forEach(r => { if (r.textContent && r.textContent.toUpperCase().includes('SUMAS IGUALES')) totalsRow = r; });
-                        const refRow = totalsRow || table.querySelector('tr:last-child');
-                        const emptyCellStyle = 'border:1px solid #999;padding:8px 4px;font-size:14px;min-height:40px;';
-                        // Insertar filas vacías antes de totales hasta alcanzar la altura objetivo
-                        while (body.scrollHeight < (targetPx - reservePx)) {
-                            const tr = iframe.contentDocument.createElement('tr');
-                            for (let i = 0; i < 5; i++) {
-                                const td = iframe.contentDocument.createElement('td');
-                                td.style.cssText = emptyCellStyle;
-                                td.innerHTML = '&nbsp;';
-                                tr.appendChild(td);
-                            }
-                            refRow.parentNode.insertBefore(tr, refRow);
-                            // Evitar bucle infinito por seguridad
-                            if (table.querySelectorAll('tr').length > 120) break;
-                        }
-                        // Colocar firmas pegadas al fondo del área útil
-                        try {
-                            const firmasEl = iframe.contentDocument.getElementById('pol-firmas');
-                            if (firmasEl) {
-                                firmasEl.style.position = 'absolute';
-                                firmasEl.style.left = '0';
-                                firmasEl.style.right = '0';
-                                firmasEl.style.bottom = '0';
-                            }
-                        } catch (e) { /* ignore */ }
-                    }
-                } catch (e) {
-                    console.warn('No fue posible ajustar filas dinámicas:', e);
-                }
-                const canvas = await html2canvas(body, { scale: 2, useCORS: true, logging: false, width: RENDER_W, windowWidth: RENDER_W });
-                const imgW = usableW;
-                const imgH = (canvas.height * imgW) / canvas.width;
-                const imgData = canvas.toDataURL('image/png');
-                if (imgH <= usableH) {
-                    pdf.addImage(imgData, 'PNG', ML, MT, imgW, imgH);
-                } else {
-                    const totalPages = Math.ceil(imgH / usableH);
-                    for (let pg = 0; pg < totalPages; pg++) {
-                        if (pg > 0) pdf.addPage();
-                        const srcY = (pg * usableH * canvas.width) / imgW;
-                        const srcH = Math.min((usableH * canvas.width) / imgW, canvas.height - srcY);
-                        const sliceCanvas = document.createElement('canvas');
-                        sliceCanvas.width = canvas.width;
-                        sliceCanvas.height = Math.round(srcH);
-                        const ctx = sliceCanvas.getContext('2d');
-                        ctx.drawImage(canvas, 0, Math.round(srcY), canvas.width, Math.round(srcH), 0, 0, canvas.width, Math.round(srcH));
-                        const sliceData = sliceCanvas.toDataURL('image/png');
-                        const sliceH = (sliceCanvas.height * imgW) / sliceCanvas.width;
-                        pdf.addImage(sliceData, 'PNG', ML, MT, imgW, sliceH);
-                    }
-                }
-                const safeName = titulo.replace(/[^a-zA-Z0-9_áéíóúñÁÉÍÓÚÑ ()-]/g, '').replace(/ +/g, '_');
-                pdf.save(safeName + '.pdf');
-            } catch(e) {
-                console.error('Error generando PDF:', e);
-                const win = window.open('', '_blank', 'width=1000,height=750');
-                win.document.open(); win.document.write(html); win.document.close();
-            } finally {
-                document.body.removeChild(iframe);
+        function abrirPDF(html, titulo, orientation) {
+            // Método nativo: abre ventana nueva y usa window.print() del navegador.
+            // Genera PDF vectorial de alta calidad sin pasar por canvas ni compresión de imagen.
+            orientation = orientation || 'portrait';
+            const pageCSS = `@page { size: letter ${orientation}; margin: 12mm 10mm 12mm 15mm; }`;
+            // Inyectar @page con orientación antes del cierre de </style> o al inicio del <head>
+            let printHtml = html;
+            if (printHtml.includes('</style>')) {
+                printHtml = printHtml.replace('</style>', pageCSS + '</style>');
+            } else {
+                printHtml = printHtml.replace('<head>', '<head><style>' + pageCSS + '</style>');
             }
+            const win = window.open('', '_blank');
+            if (!win) { showError('El navegador bloqueó la ventana emergente. Permite pop-ups para este sitio.'); return; }
+            win.document.open();
+            win.document.write(printHtml);
+            win.document.close();
+            // Disparar print una sola vez: onload si llega a tiempo, si no el setTimeout como fallback
+            let printed = false;
+            win.onload = function() { if (!printed) { printed = true; win.focus(); win.print(); } };
+            setTimeout(function() { if (!printed) { printed = true; try { win.focus(); win.print(); } catch(e) {} } }, 800);
         }
 
         // ══════════════════════════════════════════════════════════
@@ -3178,32 +3377,48 @@
             const estCuadre = cuadra ? 'color:#006100;background:#c6efce' : 'color:#9c0006;background:#ffc7ce';
 
             // Tabla de dos columnas: Activo | Pasivo+Capital
+            // Usar tabla exterior para alinear los totales exactamente a la misma altura
             const html = `
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                <div>
-                    <table style="width:100%">
-                        <thead><tr style="background:#1a3c5e"><th colspan="3" style="color:#fff;text-align:center;padding:8px;font-size:11px;letter-spacing:0.1em">ACTIVO</th></tr>
-                        <tr><th>Cuenta</th><th>Descripción</th><th>Importe</th></tr></thead>
-                        <tbody>${rowsAct}
-                        <tr><td colspan="3" style="border-top:3px double #1a3c5e;"></td></tr>
-                        <tr><td colspan="2" style="text-align:right;font-weight:700;">TOTAL ACTIVO:</td><td class="num" style="font-weight:700;background:#1a3c5e;color:#fff">${fmtV(totAct)}</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div>
-                    <table style="width:100%">
-                        <thead><tr style="background:#c8a96e"><th colspan="3" style="color:#fff;text-align:center;padding:8px;font-size:11px;letter-spacing:0.1em">PASIVO Y CAPITAL</th></tr>
-                        <tr><th>Cuenta</th><th>Descripción</th><th>Importe</th></tr></thead>
-                        <tbody>${rowsPas}
-                        <tr><td colspan="3" style="border-top:3px double #c8a96e;"></td></tr>
-                        <tr><td colspan="2" style="text-align:right;font-weight:700;">TOTAL PASIVO+CAPITAL:</td><td class="num" style="font-weight:700;background:#c8a96e;color:#fff">${fmtV(totPas)}</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div style="margin-top:12px;padding:8px 14px;border-radius:8px;font-weight:700;font-size:0.85rem;text-align:center;${estCuadre}">
-                ${cuadra ? '✓ Balance cuadrado' : `⚠ Diferencia: ${fmtV(Math.abs(totAct - totPas))}`} &nbsp;|&nbsp; Activo: ${fmtV(totAct)} &nbsp;|&nbsp; Pasivo+Capital: ${fmtV(totPas)}
-            </div>`;
+            <table style="width:100%;border-collapse:separate;border-spacing:16px 0;" class="balance-outer">
+                <tr>
+                    <td style="width:50%;vertical-align:top;padding:0;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#1a3c5e"><th colspan="3" style="color:#fff;text-align:center;padding:8px;font-size:11px;letter-spacing:0.1em">ACTIVO</th></tr>
+                                <tr><th>Cuenta</th><th>Descripción</th><th>Importe</th></tr>
+                            </thead>
+                            <tbody>${rowsAct}</tbody>
+                        </table>
+                    </td>
+                    <td style="width:50%;vertical-align:top;padding:0;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#c8a96e"><th colspan="3" style="color:#fff;text-align:center;padding:8px;font-size:11px;letter-spacing:0.1em">PASIVO Y CAPITAL</th></tr>
+                                <tr><th>Cuenta</th><th>Descripción</th><th>Importe</th></tr>
+                            </thead>
+                            <tbody>${rowsPas}</tbody>
+                        </table>
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding:0;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <tbody>
+                                <tr><td colspan="3" style="border-top:3px double #1a3c5e;"></td></tr>
+                                <tr><td colspan="2" style="text-align:right;font-weight:700;">TOTAL ACTIVO:</td><td class="num" style="font-weight:700;background:#1a3c5e;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${fmtV(totAct)}</td></tr>
+                            </tbody>
+                        </table>
+                    </td>
+                    <td style="padding:0;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <tbody>
+                                <tr><td colspan="3" style="border-top:3px double #c8a96e;"></td></tr>
+                                <tr><td colspan="2" style="text-align:right;font-weight:700;">TOTAL PASIVO+CAPITAL:</td><td class="num" style="font-weight:700;background:#c8a96e;color:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${fmtV(totPas)}</td></tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            </table>`;
             return html;
         }
 
@@ -3493,6 +3708,7 @@
             limpiarPolizaForm();
             window.showSuccess();
             filtrarPolizas();
+            renderPendientes();
         };
 
         // ── Editar póliza ──
@@ -3534,6 +3750,7 @@
             db.polizas = (db.polizas || []).filter(p => p.id !== id);
             await guardarDB();
             filtrarPolizas();
+            renderPendientes();
         };
 
         window.cancelarEdicionPoliza = function() { limpiarPolizaForm(); };
@@ -3559,6 +3776,66 @@
         }
 
         // ── Filtrar historial ──
+        // ── Panel de asientos pendientes de polizar ──
+        window.renderPendientes = function() {
+            const asientos = db.asientos || [];
+            const pendientes = [];
+            asientos.forEach(a => {
+                const movs = db.movimientos.filter(m => m.idAsiento === a.id);
+                if (!movs.length) return;
+                const saldos = calcularSaldosPendientes(a.id, null);
+                const pendD = saldos.reduce((s, x) => s + x.debePendiente, 0);
+                const pendH = saldos.reduce((s, x) => s + x.haberPendiente, 0);
+                if (pendD > 0.005 || pendH > 0.005) {
+                    pendientes.push({ a, pendD, pendH });
+                }
+            });
+            pendientes.sort((x, y) => x.a.fecha.localeCompare(y.a.fecha) || x.a.no - y.a.no);
+
+            const badge = document.getElementById('pol-pend-badge');
+            const lista = document.getElementById('pol-pend-lista');
+            const card  = document.getElementById('pol-pendientes-card');
+
+            if (badge) badge.textContent = pendientes.length ? '(' + pendientes.length + ')' : '(ninguno)';
+            if (card)  card.style.borderColor = pendientes.length ? 'var(--amber)' : 'var(--border)';
+
+            if (!lista) return;
+            if (!pendientes.length) {
+                lista.innerHTML = '<tr class="empty-row"><td colspan="5" style="color:var(--green);">✔ Todos los asientos están polizados</td></tr>';
+                return;
+            }
+            lista.innerHTML = pendientes.map(({a, pendD, pendH}) => {
+                const pend = Math.max(pendD, pendH);
+                return '<tr>' +
+                    '<td class="td-code">' + a.no + '</td>' +
+                    '<td style="white-space:nowrap;font-size:0.78rem;">' + fmtFecha(a.fecha) + '</td>' +
+                    '<td style="font-size:0.76rem;color:var(--muted);">' + (a.concepto||'') + '</td>' +
+                    '<td style="font-size:0.78rem;font-weight:700;color:var(--amber);">$' + pend.toFixed(2) + '</td>' +
+                    '<td><button class="btn-icon btn-gold" style="font-size:0.7rem;padding:4px 8px;" onclick="cargarAsientoPendiente(' + a.no + ')" title="Polizar">📋</button></td>' +
+                    '</tr>';
+            }).join('');
+        };
+
+        window.togglePendientesPanel = function() {
+            const body  = document.getElementById('pol-pend-body');
+            const arrow = document.getElementById('pol-pend-arrow');
+            const open  = body.style.display !== 'none';
+            body.style.display  = open ? 'none' : 'block';
+            arrow.textContent   = open ? '▶' : '▼';
+            if (!open) renderPendientes();
+        };
+
+        window.cargarAsientoPendiente = function(no) {
+            // Cerrar el panel y cargar el asiento en el formulario
+            const body  = document.getElementById('pol-pend-body');
+            const arrow = document.getElementById('pol-pend-arrow');
+            body.style.display = 'none';
+            arrow.textContent  = '▶';
+            document.getElementById('pol_buscar_no').value = String(no);
+            polBuscarAsiento();
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        };
+
         window.filtrarPolizas = function() {
             const buscarEl = document.getElementById('pol-fil-buscar');
             if (!buscarEl) return;
@@ -3606,6 +3883,7 @@
             document.getElementById('pol-fil-fi').value = '';
             document.getElementById('pol-fil-ff').value = '';
             filtrarPolizas();
+            renderPendientes();
         };
 
         // ── Ver / Imprimir póliza individual ──
@@ -3614,7 +3892,7 @@
             if (!p) return;
             const html = buildPolizaFullHTML(p);
             const titulo = 'Poliza_' + p.tipo + '_' + p.folio + '_' + p.fecha;
-            await abrirPDF(html, titulo);
+            abrirPDF(html, titulo);
         };
 
         function buildPolizaBodyHTML(p) {
@@ -3623,9 +3901,7 @@
             const color = colores[p.tipo] || '#003366';
             const FILAS_MIN = 22;
 
-            // Cell style: reduced horizontal padding to fit page width
-            // Aumentar font-size para los datos bajo los encabezados
-            const cs = 'border:1px solid #999;padding:8px 4px;font-size:14px;overflow:hidden;';
+            const cs = 'border:1px solid #999;padding:4px 4px;font-size:11px;overflow:hidden;height:28px;';
             let movRows = '';
             p.movimientos.forEach(m => {
                 movRows += '<tr>' +
@@ -3637,7 +3913,7 @@
                     '</tr>';
             });
             for (let i = p.movimientos.length; i < FILAS_MIN; i++) {
-                movRows += '<tr><td style="' + cs + 'min-height:40px;">&nbsp;</td><td style="' + cs + 'min-height:40px;"></td><td style="' + cs + 'min-height:40px;"></td><td style="' + cs + 'min-height:40px;"></td><td style="' + cs + 'min-height:40px;"></td></tr>';
+                movRows += '<tr><td style="' + cs + '">&nbsp;</td><td style="' + cs + '"></td><td style="' + cs + '"></td><td style="' + cs + '"></td><td style="' + cs + '"></td></tr>';
             }
 
             // Firmas: usar una celda única con contenedor flex para columnas de igual ancho
@@ -3649,15 +3925,15 @@
             if (campos.auxiliar) firmaFields.push({ key: 'auxiliar', label: 'AUXILIAR', value: p.auxiliar || '' });
             let firmasHTML = '';
             if (firmaFields.length === 0) {
-                firmasHTML = '<tr><td colspan="5" style="padding:8px;border:1px solid #999;"><div style="min-height:56px;"></div></td></tr>';
+                firmasHTML = '<tr><td colspan="5" style="padding:4px;border:1px solid #999;"><div style="min-height:40px;"></div></td></tr>';
             } else {
                 firmasHTML = '<tr><td colspan="5" style="padding:0;border:0;">' +
                     '<div id="pol-firmas" style="display:flex;gap:8px;width:100%;">';
                 firmaFields.forEach(f => {
                     if (f.key === 'control') {
-                        firmasHTML += '<div style="flex:1;border:1px solid #999;padding:8px;display:flex;align-items:flex-end;justify-content:center;min-height:56px;font-size:11px;font-weight:700;">' + f.label + '</div>';
+                        firmasHTML += '<div style="flex:1;border:1px solid #999;padding:4px;display:flex;align-items:flex-end;justify-content:center;min-height:40px;font-size:10px;font-weight:700;">' + f.label + '</div>';
                     } else {
-                        firmasHTML += '<div style="flex:1;border:1px solid #999;padding:8px;display:flex;flex-direction:column;justify-content:flex-end;min-height:56px;">' +
+                        firmasHTML += '<div style="flex:1;border:1px solid #999;padding:4px;display:flex;flex-direction:column;justify-content:flex-end;min-height:40px;">' +
                             '<div style="border-bottom:1px solid #000;padding-bottom:6px;min-height:20px;text-align:center;font-size:14px;">' + (f.value || '&nbsp;') + '</div>' +
                             '<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;text-align:center;margin-top:6px;">' + f.label + '</div>' +
                             '</div>';
@@ -3670,15 +3946,15 @@
                 '<colgroup><col style="width:13%"><col style="width:13%"><col style="width:36%"><col style="width:19%"><col style="width:19%"></colgroup>' +
                 '<tr><td colspan="5" style="background:' + color + ';color:#fff;text-align:center;padding:36px 20px;font-size:26px;font-weight:800;letter-spacing:0.12em;">PÓLIZA DE ' + p.tipo.toUpperCase() + '</td></tr>' +
                 // Mostrar No. Diario en la póliza impresa debajo de la fecha
-                '<tr><td colspan="2" style="padding:8px 6px;border:1px solid #999;text-align:center;vertical-align:middle;">' +
+                '<tr><td colspan="2" style="padding:4px 6px;border:1px solid #999;text-align:center;vertical-align:middle;font-size:11px;">' +
                     '<div><strong>FECHA:</strong> ' + fmtFecha(p.fecha) + '</div>' +
-                    '<div style="margin-top:6px;font-weight:700;">No. Diario: ' + (p.noDiario || p.noAsiento || '') + '</div>' +
+                    '<div style="margin-top:2px;font-weight:700;">No. Diario: ' + (p.noDiario || p.noAsiento || '') + '</div>' +
                 '</td>' +
-                '<td colspan="3" style="padding:8px 6px;border:1px solid #999;text-align:center;"><strong style="color:#000;font-size:14px;">FOLIO: ' + p.folio + '</strong></td></tr>' +
+                '<td colspan="3" style="padding:4px 6px;border:1px solid #999;text-align:center;"><strong style="color:#000;font-size:11px;">FOLIO: ' + p.folio + '</strong></td></tr>' +
                 '<tr style="background:#e8e8e8;"><th style="border:1px solid #999;padding:6px 5px;text-align:center;font-size:12px;">CUENTA</th><th style="border:1px solid #999;padding:6px 5px;text-align:center;font-size:12px;">SUB-CTA</th><th style="border:1px solid #999;padding:6px 5px;text-align:center;font-size:12px;">NOMBRE</th><th style="border:1px solid #999;padding:6px 5px;text-align:center;font-size:12px;">DEBE</th><th style="border:1px solid #999;padding:6px 5px;text-align:center;font-size:12px;">HABER</th></tr>' +
                 movRows +
                 '<tr><td colspan="3" style="border:1px solid #999;padding:6px 8px;text-align:right;font-weight:700;font-size:12px;">SUMAS IGUALES</td><td style="border:1px solid #999;padding:6px 8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000;border-bottom:3px double #000;">' + fmtMonZ(p.totalDebe) + '</td><td style="border:1px solid #999;padding:6px 8px;text-align:right;font-weight:700;font-size:12px;border-top:2px solid #000;border-bottom:3px double #000;">' + fmtMonZ(p.totalHaber) + '</td></tr>' +
-                '<tr><td colspan="5" style="border:1px solid #999;padding:12px 10px;background:#fafafa;font-size:14px;line-height:1.2;min-height:100px;vertical-align:top;"><strong style="font-size:12px;display:block;margin-bottom:6px;">CONCEPTO:</strong> ' + (p.concepto||'') + '</td></tr>' +
+                '<tr><td colspan="5" style="border:1px solid #999;padding:5px 8px;background:#fafafa;font-size:11px;line-height:1.2;min-height:40px;vertical-align:top;"><strong style="font-size:10px;display:block;margin-bottom:3px;">CONCEPTO:</strong> ' + (p.concepto||'') + '</td></tr>' +
                 '<tr><td colspan="5" style="padding:3px;"></td></tr>' +
                 firmasHTML +
                 '</table>';
@@ -3687,7 +3963,10 @@
         function buildPolizaFullHTML(p) {
             return '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
                 '@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap");' +
-                '*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"DM Sans",Arial,sans-serif;font-size:20px;color:#111;margin:0;padding:0;}' +
+                '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                'body{font-family:"DM Sans",Arial,sans-serif;font-size:20px;color:#111;margin:0;padding:0;}' +
+                'td,th{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                '@page{size:letter portrait;margin:10mm 12mm 10mm 10mm;}' +
                 '</style></head><body>' +
                 buildPolizaBodyHTML(p) +
                 '</body></html>';
@@ -3707,112 +3986,34 @@
             return rows.sort((a,b) => a.fecha.localeCompare(b.fecha) || a.folio.localeCompare(b.folio));
         }
 
-        window.exportarPolizasFiltPDF = async function() {
+        window.exportarPolizasFiltPDF = function() {
             const polizas = getPolizasFiltradas();
             if (!polizas.length){showError('No hay pólizas para exportar.');return;}
-            const ML = 10, MR = 12, MT = 10, MB = 10;
-            const { jsPDF } = window.jspdf;
-            const pdfFinal = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'letter' });
-            const pageW = pdfFinal.internal.pageSize.getWidth() - ML - MR;
-            const pageH = pdfFinal.internal.pageSize.getHeight() - MT - MB;
-            const RENDER_W = Math.round(pageW * 5.0);
-
-            for (let i = 0; i < polizas.length; i++) {
-                if (i > 0) pdfFinal.addPage();
-                const p = polizas[i];
-                const polHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
-                    '@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap");' +
-                    '*{box-sizing:border-box;margin:0;padding:0;}body{font-family:"DM Sans",Arial,sans-serif;font-size:20px;color:#111;margin:0;padding:0;}</style></head><body>' +
-                    buildPolizaBodyHTML(p) + '</body></html>';
-                const iframe = document.createElement('iframe');
-                iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:' + RENDER_W + 'px;height:auto;border:none;';
-                document.body.appendChild(iframe);
-                iframe.contentDocument.open(); iframe.contentDocument.write(polHtml); iframe.contentDocument.close();
-                await new Promise(r => { iframe.onload = r; setTimeout(r, 1200); });
-                try {
-                    const body = iframe.contentDocument.body;
-                    body.style.width = RENDER_W + 'px';
-                    body.style.margin = '0';
-                    body.style.padding = '0';
-                    body.style.paddingTop = '18px';
-                    // Ajustar dinámicamente filas vacías para que la tabla cubra la hoja
-                    try {
-                        const pxPerMm = RENDER_W / pageW; // px por mm en el render
-                        const targetPx = pageH * pxPerMm; // altura objetivo en px
-                        const footerMm = 70; // espacio reservado para totales, concepto y firmas (mm)
-                        const reservePx = footerMm * pxPerMm;
-                        // forzar tamaño del body al área útil y permitir posicionamiento absoluto
-                        body.style.position = 'relative';
-                        body.style.height = Math.round(targetPx) + 'px';
-                        const table = iframe.contentDocument.querySelector('table');
-                        if (table) {
-                            const rows = table.querySelectorAll('tr');
-                            let totalsRow = null;
-                            rows.forEach(r => { if (r.textContent && r.textContent.toUpperCase().includes('SUMAS IGUALES')) totalsRow = r; });
-                            const refRow = totalsRow || table.querySelector('tr:last-child');
-                            const emptyCellStyle = 'border:1px solid #999;padding:8px 4px;font-size:14px;min-height:40px;';
-                            while (body.scrollHeight < (targetPx - reservePx)) {
-                                const tr = iframe.contentDocument.createElement('tr');
-                                for (let i = 0; i < 5; i++) {
-                                    const td = iframe.contentDocument.createElement('td');
-                                    td.style.cssText = emptyCellStyle;
-                                    td.innerHTML = '&nbsp;';
-                                    tr.appendChild(td);
-                                }
-                                refRow.parentNode.insertBefore(tr, refRow);
-                                if (table.querySelectorAll('tr').length > 120) break;
-                            }
-                            try {
-                                const firmasEl = iframe.contentDocument.getElementById('pol-firmas');
-                                if (firmasEl) {
-                                    firmasEl.style.position = 'absolute';
-                                    firmasEl.style.left = '0';
-                                    firmasEl.style.right = '0';
-                                    firmasEl.style.bottom = '0';
-                                }
-                            } catch (e) { /* ignore */ }
-                        }
-                    } catch (e) {
-                        console.warn('No fue posible ajustar filas dinámicas (batch):', e);
-                    }
-                    const canvas = await html2canvas(body, { scale: 2, useCORS: true, logging: false, width: RENDER_W, windowWidth: RENDER_W });
-                    const imgW = pageW;
-                    const imgH = (canvas.height * imgW) / canvas.width;
-                    const imgData = canvas.toDataURL('image/png');
-                    if (imgH <= pageH) {
-                        pdfFinal.addImage(imgData, 'PNG', ML, MT, imgW, imgH);
-                    } else {
-                        const totalPages = Math.ceil(imgH / pageH);
-                        for (let pg = 0; pg < totalPages; pg++) {
-                            if (pg > 0) pdfFinal.addPage();
-                            const srcY = (pg * pageH * canvas.width) / imgW;
-                            const srcH = Math.min((pageH * canvas.width) / imgW, canvas.height - srcY);
-                            const sliceCanvas = document.createElement('canvas');
-                            sliceCanvas.width = canvas.width;
-                            sliceCanvas.height = Math.round(srcH);
-                            const ctx = sliceCanvas.getContext('2d');
-                            ctx.drawImage(canvas, 0, Math.round(srcY), canvas.width, Math.round(srcH), 0, 0, canvas.width, Math.round(srcH));
-                            const sliceData = sliceCanvas.toDataURL('image/png');
-                            const sliceH = (sliceCanvas.height * imgW) / sliceCanvas.width;
-                            pdfFinal.addImage(sliceData, 'PNG', ML, MT, imgW, sliceH);
-                        }
-                    }
-                } finally {
-                    document.body.removeChild(iframe);
-                }
-            }
-            // Nombre descriptivo
-            const tipo = document.getElementById('pol-fil-tipo').value || 'Todas';
-            const fi = document.getElementById('pol-fil-fi').value;
-            const ff = document.getElementById('pol-fil-ff').value;
-            let nombre = 'Polizas_' + tipo;
-            if (fi) nombre += '_desde_' + fi;
-            if (ff) nombre += '_hasta_' + ff;
-            nombre += '_(' + polizas.length + ')';
-            pdfFinal.save(nombre + '.pdf');
+            // Método nativo: ventana con todas las pólizas, page-break entre cada una, window.print()
+            const pageCSS = '@page { size: letter portrait; margin: 10mm 12mm 10mm 10mm; }';
+            const bodyCSS = '@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700&display=swap");' +
+                '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                'body{font-family:"DM Sans",Arial,sans-serif;font-size:20px;color:#111;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                'td,th{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}' +
+                '.pol-page{page-break-after:always;padding:0;}' +
+                '.pol-page:last-child{page-break-after:avoid;}';
+            let allHtml = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+                '<style>' + pageCSS + bodyCSS + '</style></head><body>';
+            polizas.forEach(function(p) {
+                allHtml += '<div class="pol-page">' + buildPolizaBodyHTML(p) + '</div>';
+            });
+            allHtml += '</body></html>';
+            const win = window.open('', '_blank');
+            if (!win) { showError('El navegador bloqueó la ventana emergente. Permite pop-ups para este sitio.'); return; }
+            win.document.open();
+            win.document.write(allHtml);
+            win.document.close();
+            let printed = false;
+            win.onload = function() { if (!printed) { printed = true; win.focus(); win.print(); } };
+            setTimeout(function() { if (!printed) { printed = true; try { win.focus(); win.print(); } catch(e) {} } }, 800);
         };
 
-        window.exportarPolizasFiltExcel = function() {
+                window.exportarPolizasFiltExcel = function() {
             const polizas = getPolizasFiltradas();
             if (!polizas.length){showError('No hay pólizas para exportar.');return;}
             if (typeof XLSX === 'undefined'){showError('No se pudo cargar la librería Excel.');return;}
