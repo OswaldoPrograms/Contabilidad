@@ -561,6 +561,11 @@
                 <div class="form-group" style="margin-bottom:10px;">
                     <input type="text" id="fil-r-buscar" placeholder="🔍 Buscar por código o nombre…" oninput="filtrarDatos('r')" style="font-size:0.82rem;padding:9px 12px;">
                 </div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                    <button class="btn-blue"    style="flex:1;font-size:0.8rem;padding:9px 10px;" onclick="descargarPlantillaImport()">📥 Descargar plantilla</button>
+                    <button class="btn-success" style="flex:1;font-size:0.8rem;padding:9px 10px;" onclick="triggerImportFile('r')">📂 Importar Excel / CSV</button>
+                </div>
+                <div id="import-preview-r" style="display:none;"></div>
                 <div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th></th></tr></thead><tbody id="lista-r"></tbody></table></div>
             </div>
         </div>
@@ -573,6 +578,11 @@
                     <input type="text" id="fil-c-buscar" placeholder="🔍 Buscar…" oninput="filtrarDatos('c')" style="font-size:0.82rem;padding:9px 12px;flex:1;min-width:120px;">
                     <div class="ss-wrap" id="ss-wrap-fil-c-rubro" style="flex:1;min-width:120px;max-width:180px;"><input class="ss-input" id="ss-fil-c-rubro" type="text" placeholder="🔍 Rubro…" autocomplete="off" style="font-size:0.82rem;padding:9px 32px 9px 12px;"><button class="ss-btn" type="button" onclick="ssClear('fil-c-rubro')">✕</button><div class="ss-dropdown" id="ss-drop-fil-c-rubro"></div><input type="hidden" id="fil-c-rubro"></div>
                 </div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                    <button class="btn-blue"    style="flex:1;font-size:0.8rem;padding:9px 10px;" onclick="descargarPlantillaImport()">📥 Descargar plantilla</button>
+                    <button class="btn-success" style="flex:1;font-size:0.8rem;padding:9px 10px;" onclick="triggerImportFile('c')">📂 Importar Excel / CSV</button>
+                </div>
+                <div id="import-preview-c" style="display:none;"></div>
                 <div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th style="white-space:nowrap;">Orden</th><th></th></tr></thead><tbody id="lista-c"></tbody></table></div>
             </div>
         </div>
@@ -591,6 +601,11 @@
                     <button class="s-tag-btn"         data-tag="inv"   onclick="setSTag('inv',this)"   style="font-size:0.72rem;padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;font-family:inherit;font-weight:600;">Inventario</button>
                     <button class="s-tag-btn"         data-tag="iva"   onclick="setSTag('iva',this)"   style="font-size:0.72rem;padding:5px 10px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;font-family:inherit;font-weight:600;">IVA</button>
                 </div>
+                <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                    <button class="btn-blue"    style="flex:1;font-size:0.8rem;padding:9px 10px;" onclick="descargarPlantillaImport()">📥 Descargar plantilla</button>
+                    <button class="btn-success" style="flex:1;font-size:0.8rem;padding:9px 10px;" onclick="triggerImportFile('s')">📂 Importar Excel / CSV</button>
+                </div>
+                <div id="import-preview-s" style="display:none;"></div>
                 <div class="table-wrap"><table><thead><tr><th>Código</th><th>Nombre</th><th>Clasif.</th><th style="white-space:nowrap;">Orden</th><th></th></tr></thead><tbody id="lista-s"></tbody></table></div>
             </div>
         </div>
@@ -645,6 +660,7 @@
                     <button class="btn-gold" onclick="triggerImportar()">📂 Restaurar</button>
                 </div>
                 <input type="file" id="file-input" style="display:none;" accept=".json" onchange="leerArchivo(this)">
+                <input type="file" id="import-general-file" style="display:none;" accept=".xlsx,.xls,.csv" onchange="importarArchivoGeneral(this)">
                 <p style="font-size:0.72rem;color:var(--muted);margin:10px 0 0;">Restaurar reemplazará todos los datos en Firebase.</p>
             </div>
             <div class="card" style="border:1.5px solid #b8cfe0;">
@@ -2305,6 +2321,380 @@
             dl(c,'libro_diario.csv');
         };
         function dl(c,f){const b=new Blob([c],{type:'text/csv;charset=utf-8;'}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download=f;l.click();}
+        /* ── IMPORTAR CUENTAS DESDE EXCEL / CSV ── */
+
+        /* ══════════════════════════════════════════════
+           IMPORTAR RUBROS / CUENTAS / SUBCUENTAS
+           ══════════════════════════════════════════════ */
+
+        /* ── Archivo oculto único compartido ── */
+        (function(){
+            const inp = document.createElement('input');
+            inp.type = 'file'; inp.id = 'import-shared-file';
+            inp.style.display = 'none';
+            inp.accept = '.xlsx,.xls,.csv';
+            document.body.appendChild(inp);
+        })();
+
+        let _importTipo = null; // 'r' | 'c' | 's'
+
+        window.triggerImportFile = function(tipo) {
+            _importTipo = tipo;
+            const inp = document.getElementById('import-shared-file');
+            inp.onchange = function() { _leerArchivoImport(this, tipo); this.value=''; };
+            inp.click();
+        };
+
+        /* ── Descarga plantilla CSV según tipo ── */
+        window.descargarPlantillaImport = function() {
+            const tipo = _importTipo || 'c';
+            const bom = '\uFEFF';
+            let csv = '', filename = '';
+
+            if (tipo === 'r') {
+                filename = 'plantilla_rubros.csv';
+                csv  = '"Código (2 díg.)","Nombre del Rubro","Est. Financieros (ej: ABXX)"\r\n';
+                csv += '"01","Activo Corriente","AX XX"\r\n';
+                csv += '"02","Pasivo Corriente","XXBX"\r\n';
+                csv += '\r\n# Letras para Estados Financieros:\r\n';
+                csv += '# A=Balance General  B=Estado de Resultados  C=Flujo de Efectivo  D=Cambio en Capital\r\n';
+                csv += '# Usa X para "no aplica". Ej: "AXXX" = solo Balance General\r\n';
+            } else if (tipo === 'c') {
+                filename = 'plantilla_cuentas.csv';
+                csv  = '"Rubro Padre (código)","Nombre de la Cuenta","Naturaleza (Deudora/Acreedora)","Crear subcuenta 001 (SI/NO)","Código manual (vacío=auto)"\r\n';
+                csv += '"01","Caja y Bancos","Deudora","SI",""\r\n';
+                csv += '"01","Cuentas por Cobrar","Deudora","NO",""\r\n';
+                csv += '"02","Proveedores","Acreedora","SI",""\r\n';
+                csv += '\r\n# RUBROS DISPONIBLES\r\n';
+                csv += '"Código","Nombre"\r\n';
+                db.rubros.forEach(r => { csv += `"${r.codigo}","${r.nombre}"\r\n`; });
+            } else {
+                filename = 'plantilla_subcuentas.csv';
+                csv  = '"Cuenta Padre (código)","Nombre de la Subcuenta","Pérd. y Ganancias (SI/NO)","Inventario (SI/NO)","Cuenta IVA (SI/NO)","Código manual (vacío=auto)"\r\n';
+                csv += '"01001","Caja General","NO","NO","NO",""\r\n';
+                csv += '"01001","Banco Nacional","NO","NO","NO",""\r\n';
+                csv += '"03001","Ventas","SI","NO","NO",""\r\n';
+                csv += '\r\n# CUENTAS DISPONIBLES\r\n';
+                csv += '"Código","Nombre"\r\n';
+                db.cuentas.forEach(c => { csv += `"${c.codigo}","${c.nombre}"\r\n`; });
+            }
+
+            const blob = new Blob([bom+csv], {type:'text/csv;charset=utf-8;'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            a.click();
+            showToast('ok', 'Plantilla descargada');
+        };
+
+        /* ── Leer archivo ── */
+        function _leerArchivoImport(input, tipo) {
+            const file = input.files[0];
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+            if (ext === 'csv') {
+                // Leer como binario para detectar BOM y elegir codificación
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const bytes = new Uint8Array(e.target.result);
+                    // Detectar BOM UTF-8 (EF BB BF)
+                    const hasUtf8Bom = bytes[0]===0xEF && bytes[1]===0xBB && bytes[2]===0xBF;
+                    const enc = hasUtf8Bom ? 'UTF-8' : _detectarEncoding(bytes);
+                    const text = new TextDecoder(enc).decode(bytes);
+                    _procesarTexto(text.replace(/^\uFEFF/,''), tipo);
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                if (typeof XLSX === 'undefined') {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+                    s.onload  = () => _leerXLSXImport(file, tipo);
+                    s.onerror = () => showError('No se pudo cargar el lector de Excel. Usa CSV.');
+                    document.head.appendChild(s);
+                } else {
+                    _leerXLSXImport(file, tipo);
+                }
+            }
+        }
+
+        function _leerXLSXImport(file, tipo) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                try {
+                    const wb = XLSX.read(e.target.result, {type:'array'});
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    _procesarTexto(XLSX.utils.sheet_to_csv(ws), tipo);
+                } catch(err) { showError('Error al leer Excel: '+err.message); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        /* ── Detectar codificación CSV ── */
+        function _detectarEncoding(bytes) {
+            // Busca secuencias UTF-8 multibyte válidas
+            let utf8Score = 0, latin1Score = 0;
+            for (let i = 0; i < Math.min(bytes.length, 2000); i++) {
+                const b = bytes[i];
+                if (b < 0x80) continue; // ASCII puro, ambos iguales
+                // Secuencia UTF-8 de 2 bytes: 110xxxxx 10xxxxxx
+                if ((b & 0xE0)===0xC0 && i+1<bytes.length && (bytes[i+1]&0xC0)===0x80) { utf8Score+=2; i++; }
+                // Secuencia UTF-8 de 3 bytes
+                else if ((b & 0xF0)===0xE0 && i+2<bytes.length && (bytes[i+1]&0xC0)===0x80 && (bytes[i+2]&0xC0)===0x80) { utf8Score+=3; i+=2; }
+                else { latin1Score++; } // byte alto sin secuencia UTF-8 → probablemente latin1/cp1252
+            }
+            return utf8Score >= latin1Score ? 'UTF-8' : 'windows-1252';
+        }
+
+        /* ── Parser CSV robusto ── */
+        function _parsearCSV(text) {
+            const rows = [];
+            let cur = [], field = '', inQ = false;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i], nx = text[i+1];
+                if (inQ) {
+                    if (ch==='"'&&nx==='"') { field+='"'; i++; }
+                    else if (ch==='"') { inQ=false; }
+                    else { field+=ch; }
+                } else {
+                    if (ch==='"') { inQ=true; }
+                    else if (ch===','||ch===';'||ch==='\t') { cur.push(field.trim()); field=''; }
+                    else if (ch==='\n') { cur.push(field.trim()); rows.push(cur); cur=[]; field=''; }
+                    else if (ch!=='\r') { field+=ch; }
+                }
+            }
+            if (field||cur.length) { cur.push(field.trim()); if(cur.some(x=>x)) rows.push(cur); }
+            return rows;
+        }
+
+        /* ── Detectar encabezado ── */
+        function _hallarEncabezado(rows) {
+            for (let i = 0; i < Math.min(rows.length, 8); i++) {
+                const j = rows[i].join(' ').toLowerCase();
+                if (j.includes('nombre') || j.includes('name')) return i;
+            }
+            return -1;
+        }
+
+        /* ── Dispatcher ── */
+        function _procesarTexto(text, tipo) {
+            if (tipo==='r') _procesarRubros(text);
+            else if (tipo==='c') _procesarCuentas(text);
+            else _procesarSubcuentas(text);
+        }
+
+        /* ══ RUBROS ══ */
+        function _procesarRubros(text) {
+            const rows = _parsearCSV(text);
+            const hi = _hallarEncabezado(rows);
+            if (hi<0) { showError('No se encontró fila de encabezados.'); return; }
+            const hdr = rows[hi].map(h=>h.toLowerCase().replace(/[^a-z0-9]/g,' ').trim());
+            const iCod  = hdr.findIndex(h=>h.includes('cod'));
+            const iNom  = hdr.findIndex(h=>h.includes('nombre')||h.includes('name'));
+            const iEF   = hdr.findIndex(h=>h.includes('est')||h.includes('ef')||h.includes('financ'));
+            if (iCod<0||iNom<0) { showError('Columnas requeridas: Código y Nombre.'); return; }
+
+            const filas = [];
+            for (let i=hi+1; i<rows.length; i++) {
+                const r = rows[i];
+                if (!r||r.every(x=>!x)) continue;
+                const cod = (r[iCod]||'').trim().replace(/\D/g,'').padStart(2,'0');
+                const nom = (r[iNom]||'').trim();
+                if (!cod||!nom||cod==='00'||nom.startsWith('#')) continue;
+                const ef  = iEF>=0 ? (r[iEF]||'').trim().toUpperCase().replace(/[^ABCDX]/g,'').padEnd(4,'X').slice(0,4) : 'XXXX';
+                const dup = db.rubros.some(x=>x.codigo===cod);
+                filas.push({cod, nom, ef, dup, error: dup?`Código "${cod}" ya existe`:'', _tipo:'r'});
+            }
+            if (!filas.length) { showError('Sin filas válidas.'); return; }
+            _mostrarPreview('r', filas,
+                [{k:'cod',l:'Código'},{k:'nom',l:'Nombre'},{k:'ef',l:'Est. Fin.'}]);
+        }
+
+        /* ══ CUENTAS ══ */
+        function _procesarCuentas(text) {
+            const rows = _parsearCSV(text);
+            const hi = _hallarEncabezado(rows);
+            if (hi<0) { showError('No se encontró fila de encabezados.'); return; }
+            const hdr = rows[hi].map(h=>h.toLowerCase().replace(/[^a-záéíóúüñ0-9]/gi,' ').trim());
+            const colOf = (...keys) => { for(const k of keys){const i=hdr.findIndex(h=>h.includes(k));if(i>=0)return i;} return -1; };
+            const iRubro  = colOf('rubro','padre','cod');
+            const iNom    = colOf('nombre','name','cuenta');
+            const iNat    = colOf('naturaleza','nat','tipo');
+            const iSub    = colOf('subcuenta','sub','auto');
+            const iManual = colOf('manual','sufij');
+            if (iRubro<0||iNom<0) { showError('Columnas requeridas: Rubro Padre y Nombre.'); return; }
+
+            const filas = [];
+            for (let i=hi+1; i<rows.length; i++) {
+                const r = rows[i];
+                if (!r||r.every(x=>!x)) continue;
+                const rubro = (r[iRubro]||'').trim().replace(/\D/g,'').padStart(2,'0');
+                const nom   = (r[iNom]||'').trim();
+                if (!rubro||!nom||rubro==='00'||nom.startsWith('#')) continue;
+                const rubroObj = db.rubros.find(x=>x.codigo===rubro);
+                const nat    = iNat>=0&&r[iNat] ? (r[iNat].trim().toLowerCase().includes('acree')?'Acreedora':'Deudora') : 'Deudora';
+                const crSub  = iSub>=0 ? (r[iSub]||'').trim().toUpperCase()==='SI' : false;
+                const manual = iManual>=0 ? (r[iManual]||'').trim() : '';
+                let error = '';
+                if (!rubroObj) error = `Rubro "${rubro}" no existe`;
+                else if (db.cuentas.some(c=>c.rubroPadre===rubro&&c.nombre.toLowerCase()===nom.toLowerCase())) error='Nombre duplicado en este rubro';
+                filas.push({rubro, rubroNom:rubroObj?.nombre||'', nom, nat, crSub, manual, error, _tipo:'c'});
+            }
+            if (!filas.length) { showError('Sin filas válidas.'); return; }
+            _mostrarPreview('c', filas,
+                [{k:'rubro',l:'Rubro'},{k:'nom',l:'Nombre'},{k:'nat',l:'Nat.'},{k:'crSub',l:'Sub.001',fmt:v=>v?'Sí':'No'}]);
+        }
+
+        /* ══ SUBCUENTAS ══ */
+        function _procesarSubcuentas(text) {
+            const rows = _parsearCSV(text);
+            const hi = _hallarEncabezado(rows);
+            if (hi<0) { showError('No se encontró fila de encabezados.'); return; }
+            const hdr = rows[hi].map(h=>h.toLowerCase().replace(/[^a-záéíóúüñ0-9]/gi,' ').trim());
+            const colOf = (...keys) => { for(const k of keys){const i=hdr.findIndex(h=>h.includes(k));if(i>=0)return i;} return -1; };
+            const iCuenta = colOf('cuenta','padre','cod');
+            const iNom    = colOf('nombre','name','sub');
+            const iPyg    = colOf('perd','pyg','gan','resultado');
+            const iInv    = colOf('invent','inv');
+            const iIva    = colOf('iva');
+            const iManual = colOf('manual','sufij');
+            if (iCuenta<0||iNom<0) { showError('Columnas requeridas: Cuenta Padre y Nombre.'); return; }
+
+            const filas = [];
+            for (let i=hi+1; i<rows.length; i++) {
+                const r = rows[i];
+                if (!r||r.every(x=>!x)) continue;
+                const cuenta = (r[iCuenta]||'').trim();
+                const nom    = (r[iNom]||'').trim();
+                if (!cuenta||!nom||nom.startsWith('#')) continue;
+                const cuentaObj = db.cuentas.find(x=>x.codigo===cuenta);
+                const pyg    = iPyg>=0 ? (r[iPyg]||'').trim().toUpperCase()==='SI' : false;
+                const inv    = iInv>=0 ? (r[iInv]||'').trim().toUpperCase()==='SI' : false;
+                const is_iva = iIva>=0 ? (r[iIva]||'').trim().toUpperCase()==='SI' : false;
+                const manual = iManual>=0 ? (r[iManual]||'').trim() : '';
+                let error = '';
+                if (!cuentaObj) error = `Cuenta "${cuenta}" no existe`;
+                else if (db.subcuentas.some(s=>s.cuentaPadre===cuenta&&s.nombre.toLowerCase()===nom.toLowerCase())) error='Nombre duplicado en esta cuenta';
+                filas.push({cuenta, cuentaNom:cuentaObj?.nombre||'', nom, pyg, inv, is_iva, manual, error, _tipo:'s'});
+            }
+            if (!filas.length) { showError('Sin filas válidas.'); return; }
+            _mostrarPreview('s', filas,
+                [{k:'cuenta',l:'Cuenta'},{k:'nom',l:'Nombre'},{k:'pyg',l:'PyG',fmt:v=>v?'✓':'-'},{k:'inv',l:'Inv',fmt:v=>v?'✓':'-'},{k:'is_iva',l:'IVA',fmt:v=>v?'✓':'-'}]);
+        }
+
+        /* ── Preview genérico ── */
+        function _mostrarPreview(tipo, filas, cols) {
+            const panelId = 'import-preview-'+tipo;
+            const panel   = document.getElementById(panelId);
+            const ok  = filas.filter(f=>!f.error);
+            const err = filas.filter(f=> f.error);
+            const nombres = {r:'rubro(s)',c:'cuenta(s)',s:'subcuenta(s)'};
+
+            let html = `<div style="background:var(--green-lt);border:1.5px solid #a7d9c0;border-radius:10px;padding:14px;margin-bottom:12px;">
+                <div style="font-size:0.8rem;font-weight:700;color:var(--green);margin-bottom:10px;">
+                    📋 Vista previa — ${ok.length} ${nombres[tipo]} lista(s)${err.length?`, ${err.length} con error`:''}
+                </div>
+                <div style="overflow-x:auto;border-radius:7px;border:1px solid #a7d9c0;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.76rem;">
+                    <thead><tr style="background:#1A3C5E;">`;
+            cols.forEach(c=>{ html+=`<th style="padding:7px 10px;color:#fff;text-align:left;font-size:0.65rem;letter-spacing:0.06em;">${c.l}</th>`; });
+            html+=`<th style="padding:7px 10px;color:#fff;font-size:0.65rem;">Estado</th></tr></thead><tbody>`;
+
+            filas.forEach((f,idx)=>{
+                const bg = f.error?'#FDF0F0':(idx%2===0?'#fff':'#f5faf8');
+                const badge = f.error
+                    ? `<span style="color:#8B1A1A;font-weight:700;font-size:0.68rem;">⚠ ${f.error}</span>`
+                    : `<span style="color:var(--green);font-weight:700;font-size:0.68rem;">✓ OK</span>`;
+                html+=`<tr style="background:${bg};">`;
+                cols.forEach(c=>{
+                    const val = c.fmt ? c.fmt(f[c.k]) : (f[c.k]??'');
+                    html+=`<td style="padding:6px 10px;border-bottom:1px solid #e8f5ef;">${val}</td>`;
+                });
+                html+=`<td style="padding:6px 10px;border-bottom:1px solid #e8f5ef;">${badge}</td></tr>`;
+            });
+
+            html+=`</tbody></table></div>`;
+            if (ok.length) {
+                html+=`<div style="display:flex;gap:8px;margin-top:12px;">
+                    <button onclick="_confirmarImport('${tipo}')" style="flex:1;padding:11px;background:var(--green);color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:700;font-size:0.85rem;cursor:pointer;">✅ Importar ${ok.length} ${nombres[tipo]}</button>
+                    <button onclick="document.getElementById('import-preview-${tipo}').style.display='none'" style="flex:0 0 auto;padding:11px 14px;background:#fff;color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-weight:600;font-size:0.85rem;cursor:pointer;">Cancelar</button>
+                </div>`;
+            } else {
+                html+=`<button onclick="document.getElementById('import-preview-${tipo}').style.display='none'" style="margin-top:10px;padding:10px;background:#fff;color:var(--muted);border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-weight:600;font-size:0.82rem;cursor:pointer;width:100%;">Cerrar</button>`;
+            }
+            html+='</div>';
+            panel.innerHTML = html;
+            panel._filas = filas.filter(f=>!f.error);
+            panel.style.display = 'block';
+        }
+
+        /* ── Confirmar importación ── */
+        window._confirmarImport = async function(tipo) {
+            const panel = document.getElementById('import-preview-'+tipo);
+            const filas = panel._filas || [];
+            if (!filas.length) return;
+            let n = 0;
+
+            if (tipo==='r') {
+                for (const f of filas) {
+                    if (db.rubros.some(x=>x.codigo===f.cod)) continue;
+                    db.rubros.push({codigo:f.cod, nombre:f.nom, ef:f.ef});
+                    n++;
+                }
+            } else if (tipo==='c') {
+                for (const f of filas) {
+                    const grupo = db.cuentas.filter(c=>c.rubroPadre===f.rubro).sort((a,b)=>a.codigo.localeCompare(b.codigo));
+                    grupo.forEach((c,i)=>c._orden=i);
+                    const posVal = grupo.length;
+                    let suf = (f.manual&&/^\d{1,3}$/.test(f.manual)) ? f.manual.padStart(3,'0') : String(posVal+1).padStart(3,'0');
+                    const tmpCod = f.rubro+suf;
+                    const obj = {codigo:tmpCod, nombre:f.nom, rubroPadre:f.rubro, nat:f.nat, _orden:posVal};
+                    db.cuentas.push(obj);
+                    const nuevoGrupo = db.cuentas.filter(c=>c.rubroPadre===f.rubro);
+                    nuevoGrupo.sort((a,b)=>(a._orden??999)-(b._orden??999));
+                    nuevoGrupo.forEach((c,i)=>{
+                        const nc=f.rubro+String(i+1).padStart(3,'0');
+                        if(c.codigo!==nc){
+                            db.subcuentas.forEach(s=>{if(s.cuentaPadre===c.codigo){s.cuentaPadre=nc;s.codigo=nc+s.codigo.slice(c.codigo.length);}});
+                            db.movimientos.forEach(m=>{if(m.subcuenta&&m.subcuenta.startsWith(c.codigo))m.subcuenta=nc+m.subcuenta.slice(c.codigo.length);});
+                            c.codigo=nc;
+                        }
+                    });
+                    db.cuentas.forEach(c=>delete c._orden);
+                    if (f.crSub) {
+                        const finalObj = db.cuentas.find(c=>c.rubroPadre===f.rubro&&c.nombre===f.nom);
+                        if (finalObj) {
+                            const sc = finalObj.codigo+'001';
+                            if (vc(db.subcuentas,sc,null)) db.subcuentas.push({codigo:sc,nombre:f.nom,cuentaPadre:finalObj.codigo,pyg:false,inv:false,is_iva:false});
+                        }
+                    }
+                    n++;
+                }
+            } else { // subcuentas
+                for (const f of filas) {
+                    const grupo = db.subcuentas.filter(s=>s.cuentaPadre===f.cuenta).sort((a,b)=>a.codigo.localeCompare(b.codigo));
+                    grupo.forEach((s,i)=>s._orden=i);
+                    const posVal = grupo.length;
+                    let suf = (f.manual&&/^\d{1,3}$/.test(f.manual)) ? f.manual.padStart(3,'0') : String(posVal+1).padStart(3,'0');
+                    const tmpCod = f.cuenta+suf;
+                    const obj = {codigo:tmpCod,nombre:f.nom,cuentaPadre:f.cuenta,pyg:f.pyg,inv:f.inv,is_iva:f.is_iva,_orden:posVal};
+                    db.subcuentas.push(obj);
+                    const nuevoGrupo = db.subcuentas.filter(s=>s.cuentaPadre===f.cuenta);
+                    nuevoGrupo.sort((a,b)=>(a._orden??999)-(b._orden??999));
+                    nuevoGrupo.forEach((s,i)=>{
+                        const nc=f.cuenta+String(i+1).padStart(3,'0');
+                        if(s.codigo!==nc){ db.movimientos.forEach(m=>{if(m.subcuenta===s.codigo)m.subcuenta=nc;}); s.codigo=nc; }
+                    });
+                    db.subcuentas.forEach(s=>delete s._orden);
+                    n++;
+                }
+            }
+
+            await guardarDB();
+            panel.style.display = 'none';
+            const nombres = {r:'rubro(s)',c:'cuenta(s)',s:'subcuenta(s)'};
+            showToast('ok', `✅ ${n} ${nombres[tipo]} importado(s) correctamente`);
+        };
+
         window.descargarJSON=function(){const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download='backup_contaapp.json';l.click();};
         window.triggerImportar=function(){document.getElementById('file-input').click();};
         window.leerArchivo=async function(input){
