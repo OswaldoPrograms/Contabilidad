@@ -305,24 +305,202 @@
         }
         .ss-btn:hover { background: #d4d1cb; color: var(--ink); }
         .ss-wrap.has-value .ss-btn { display: flex; }
-    </style>
+    
+        /* ── MULTI-USUARIO MODAL ── */
+        #user-modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(3px);
+            z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
+            padding: 16px;
+        }
+        #user-modal-overlay.hidden { display: none; }
+        .um-dialog {
+            background: #1a2035;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            width: 100%; max-width: 360px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: flex; flex-direction: column;
+            max-height: 85vh;
+        }
+        .um-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 18px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .um-header-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.05rem; color: #fff; margin: 0;
+        }
+        .um-header-sub {
+            font-size: 0.62rem; color: var(--accent-2);
+            letter-spacing: 0.12em; text-transform: uppercase;
+            font-weight: 600; margin-top: 1px;
+        }
+        .um-close-btn {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: rgba(255,255,255,0.08); border: none;
+            color: rgba(255,255,255,0.5); font-size: 1rem;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; margin: 0; padding: 0;
+            flex-shrink: 0; font-family: inherit; width: auto;
+            min-width: 28px; line-height: 1;
+            transition: background 0.15s, color 0.15s;
+        }
+        .um-close-btn:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .um-body { padding: 12px 14px; overflow-y: auto; flex: 1; }
+        .um-section-label {
+            font-size: 0.6rem; font-weight: 700; color: rgba(255,255,255,0.35);
+            letter-spacing: 0.12em; text-transform: uppercase;
+            margin: 0 0 8px; padding: 0 2px;
+        }
+        .um-user-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .um-user-item {
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 10px; padding: 9px 10px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .um-user-item:hover { background: rgba(255,255,255,0.11); border-color: rgba(255,255,255,0.18); }
+        .um-user-item.activo {
+            background: rgba(200,169,110,0.14);
+            border-color: var(--accent-2);
+        }
+        .um-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: var(--accent); color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 0.88rem; flex-shrink: 0;
+            text-transform: uppercase;
+        }
+        .um-avatar.activo { background: var(--accent-2); color: var(--ink); }
+        .um-info { flex: 1; min-width: 0; }
+        .um-name {
+            font-weight: 600; font-size: 0.85rem; color: #fff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .um-activo-badge {
+            font-size: 0.56rem; background: var(--accent-2); color: var(--ink);
+            border-radius: 8px; padding: 1px 5px; font-weight: 800;
+            letter-spacing: 0.05em; text-transform: uppercase; flex-shrink: 0;
+        }
+        .um-id-text { font-size: 0.6rem; color: rgba(255,255,255,0.3); margin-top: 1px; }
+        .um-del-btn {
+            background: transparent; border: none;
+            color: rgba(255,80,80,0.4); font-size: 0.9rem;
+            cursor: pointer; padding: 4px 5px; border-radius: 6px;
+            margin: 0; width: auto; min-width: 28px;
+            font-family: inherit; transition: color 0.15s, background 0.15s;
+            flex-shrink: 0;
+        }
+        .um-del-btn:hover { color: #f87171; background: rgba(248,113,113,0.1); }
+        .um-empty {
+            text-align: center; color: rgba(255,255,255,0.3);
+            font-size: 0.8rem; padding: 16px 0;
+        }
+        .um-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 4px 0 12px; }
+        .um-new-row { display: flex; gap: 8px; }
+        .um-input {
+            flex: 1; background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px; padding: 9px 12px;
+            color: #fff; font-size: 0.85rem;
+            font-family: 'DM Sans', sans-serif; outline: none;
+        }
+        .um-input::placeholder { color: rgba(255,255,255,0.25); }
+        .um-input:focus { border-color: var(--accent-2); background: rgba(255,255,255,0.12); }
+        .um-add-btn {
+            background: var(--accent-2); color: var(--ink);
+            border: none; border-radius: 8px;
+            padding: 9px 14px; font-weight: 700; font-size: 0.82rem;
+            cursor: pointer; font-family: 'DM Sans', sans-serif;
+            flex-shrink: 0; width: auto; margin: 0;
+            transition: background 0.15s;
+        }
+        .um-add-btn:hover { background: #e0bc7e; }
+
+        /* ── HEADER USER PILL ── */
+        #header-user-pill {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 4px 10px 4px 5px;
+            font-size: 0.7rem; font-weight: 600;
+            color: rgba(255,255,255,0.85);
+            cursor: pointer; transition: background 0.15s;
+            user-select: none; max-width: 160px;
+        }
+        #header-user-pill:hover { background: rgba(255,255,255,0.14); }
+        .pill-avatar {
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--accent-2); color: var(--ink);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.62rem; font-weight: 800; flex-shrink: 0;
+            text-transform: uppercase;
+        }
+        .pill-name {
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            max-width: 80px;
+        }
+        .pill-arrow { font-size: 0.55rem; color: rgba(255,255,255,0.4); flex-shrink: 0; }
+
+</style>
 </head>
 <body>
 
     <div id="loading-overlay">
         <div class="loader-brand">ContaApp</div>
-        <div class="loader-sub">Conectando con la nube</div>
+        <div class="loader-sub" id="loading-sub-text">Conectando con la nube</div>
         <div class="spinner"></div>
+    </div>
+
+    <!-- ══ MODAL MULTI-USUARIO ══ -->
+    <div id="user-modal-overlay" class="hidden" onclick="umOverlayClick(event)">
+        <div class="um-dialog">
+            <div class="um-header">
+                <div>
+                    <div class="um-header-title">Bases de Datos</div>
+                    <div class="um-header-sub">ContaApp Pro</div>
+                </div>
+                <button class="um-close-btn" onclick="cerrarSelectorUsuario()">✕</button>
+            </div>
+            <div class="um-body">
+                <div class="um-section-label">Selecciona</div>
+                <div class="um-user-list" id="um-user-list">
+                    <div class="um-empty">Sin bases de datos. Crea una abajo.</div>
+                </div>
+                <hr class="um-divider">
+                <div class="um-section-label">Nueva base de datos</div>
+                <div class="um-new-row">
+                    <input class="um-input" id="um-new-name" type="text" placeholder="Ej: Empresa ABC…" maxlength="40">
+                    <button class="um-add-btn" onclick="umCrearUsuario()">＋</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <header>
         <div class="header-brand">
             <span class="header-title">ContaApp Pro</span>
-            <span class="header-sub">Sistema Contable</span>
+            <span class="header-sub" id="header-db-name">Sistema Contable</span>
         </div>
-        <div id="sync-status">
-            <div id="sync-dot"></div>
-            <span id="sync-label">Conectando</span>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div id="header-user-pill" onclick="abrirSelectorUsuario()" title="Cambiar base de datos">
+                <div class="pill-avatar" id="pill-avatar-text">?</div>
+                <span class="pill-name" id="pill-name-text">—</span>
+                <span class="pill-arrow">▼</span>
+            </div>
+            <div id="sync-status">
+                <div id="sync-dot"></div>
+                <span id="sync-label">Conectando</span>
+            </div>
         </div>
     </header>
 
@@ -635,6 +813,24 @@
 
         <!-- ── SISTEMA ── -->
         <div id="datos-sec-sistema" class="datos-sec" style="display:none;">
+            <!-- Ejercicio Fiscal -->
+            <div class="card" style="border:1.5px solid var(--accent);">
+                <div class="card-title" style="color:var(--accent);">📅 Ejercicio Fiscal</div>
+                <div class="form-group" style="margin-bottom:10px;">
+                    <label>Año del ejercicio</label>
+                    <input type="number" id="cfg_ejercicio" min="2000" max="2099" step="1"
+                        placeholder="Ej: 2024"
+                        oninput="guardarEjercicio()"
+                        style="font-size:1.1rem;font-weight:700;letter-spacing:0.04em;text-align:center;">
+                </div>
+                <div id="cfg_ejercicio_preview" style="display:none;background:#e8f0f8;border:1.5px solid #b8cfe0;border-radius:8px;padding:10px 14px;font-size:0.78rem;color:var(--accent);">
+                    <span style="font-weight:700;">📊 Período activo:</span>
+                    <span id="cfg_ejercicio_preview_text"></span>
+                </div>
+                <p style="font-size:0.72rem;color:var(--muted);margin:10px 0 0;">
+                    Todos los reportes usarán este año como período predeterminado al abrirse.
+                </p>
+            </div>
             <!-- Configuración de Inventarios -->
             <div class="card" style="border:1.5px solid #a7d9c0;">
                 <div class="card-title" style="color:var(--green);">📦 Configuración de Inventarios</div>
@@ -669,6 +865,11 @@
                 <button class="btn-blue" onclick="repararMovimientos()">🔧 Reparar movimientos</button>
                 <div id="diag-resultado" style="font-size:0.78rem;margin-top:10px;padding:10px;border-radius:8px;display:none;"></div>
             </div>
+            <div class="card" style="border:1.5px solid var(--accent);">
+                <div class="card-title" style="color:var(--accent);">👥 Bases de Datos</div>
+                <p style="font-size:0.78rem;color:var(--muted);margin:0 0 12px;">Cambia entre bases de datos o crea nuevas. Cada base es independiente en Firebase.</p>
+                <button class="btn-blue" onclick="abrirSelectorUsuario()">🔄 Cambiar / Gestionar Bases de Datos</button>
+            </div>
             <div class="danger-card">
                 <div class="card-title">⚠ Zona de Peligro</div>
                 <button class="btn-danger" onclick="borrarTodo()">🗑 Borrar toda la base de datos</button>
@@ -696,7 +897,7 @@
                 <div class="form-group"><label>Fecha Inicial</label><input type="date" id="rep_fi" onchange="vistaReporte()"></div>
                 <div class="form-group"><label>Fecha Final</label><input type="date" id="rep_ff" onchange="vistaReporte()"></div>
             </div>
-            <button class="btn-ghost" style="font-size:0.78rem;padding:8px 12px;width:auto;margin:0;" onclick="resetPeriodo()">↺ Restablecer ejercicio completo</button>
+            <button id="btn-reset-periodo" class="btn-ghost" style="font-size:0.78rem;padding:8px 12px;width:auto;margin:0;" onclick="resetPeriodo()">↺ Ejercicio completo</button>
         </div>
 
         <!-- Tipo de reporte — pills -->
@@ -712,6 +913,14 @@
                 <button class="rep-pill"        data-tipo="kardex"   onclick="seleccionarReporte('kardex',this)" id="pill-kardex" style="display:none;">📦 Kardex</button>
             </div>
             <!-- Opciones extra por tipo -->
+            <div id="opt-diario" class="rep-opt" style="display:block;margin-top:12px;">
+                <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.04em;">Vista del asiento</label>
+                <select id="diario_vista" onchange="vistaReporte()" style="margin-top:6px;">
+                    <option value="subcuentas">Subcuentas (detalle completo)</option>
+                    <option value="cuentas">Solo Cuenta Mayor (consolidado)</option>
+                    <option value="parcial">Parcial — subcuentas indentadas + total en cuenta</option>
+                </select>
+            </div>
             <div id="opt-mayor" class="rep-opt" style="display:none;margin-top:12px;">
                 <label style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.04em;">Agrupar por</label>
                 <select id="mayor_nivel" onchange="vistaReporte()" style="margin-top:6px;">
@@ -1055,6 +1264,108 @@
         <div class="tab-item" onclick="switchWin('win-datos',this)"><span class="tab-icon">⚙️</span><span>Datos</span></div>
     </nav>
 
+    <!-- ══ MULTI-USUARIO JS (no module) ══ -->
+    <script>
+        const UM_KEY = 'contaapp_usuarios_v1';
+        const UM_ACTIVO_KEY = 'contaapp_usuario_activo_v1';
+
+        function umGetUsuarios() {
+            try { return JSON.parse(localStorage.getItem(UM_KEY) || '[]'); } catch(e) { return []; }
+        }
+        function umSetUsuarios(arr) { localStorage.setItem(UM_KEY, JSON.stringify(arr)); }
+        function umGetActivo()      { return localStorage.getItem(UM_ACTIVO_KEY) || null; }
+        function umSetActivo(id)    { localStorage.setItem(UM_ACTIVO_KEY, id); }
+
+        function umGetNombreActivo() {
+            const id = umGetActivo();
+            if (!id) return null;
+            const u = umGetUsuarios().find(x => x.id === id);
+            return u ? u.nombre : null;
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function umCrearUsuario() {
+            const input = document.getElementById('um-new-name');
+            const nombre = (input.value || '').trim();
+            if (!nombre) { input.focus(); return; }
+            const usuarios = umGetUsuarios();
+            const slug = nombre.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,20);
+            const id = 'u_' + Date.now() + '_' + slug;
+            usuarios.push({ id, nombre });
+            umSetUsuarios(usuarios);
+            input.value = '';
+            umRenderLista();
+            if (usuarios.length === 1) umSeleccionar(id);
+        }
+
+        function umEliminar(id) {
+            if (!confirm('¿Eliminar esta base de datos del dispositivo?\nLos datos en Firebase NO se borran.')) return;
+            const usuarios = umGetUsuarios().filter(u => u.id !== id);
+            umSetUsuarios(usuarios);
+            if (umGetActivo() === id) localStorage.removeItem(UM_ACTIVO_KEY);
+            umRenderLista();
+        }
+
+        function umRenderLista() {
+            const lista = document.getElementById('um-user-list');
+            if (!lista) return;
+            const usuarios = umGetUsuarios();
+            const activo   = umGetActivo();
+            if (usuarios.length === 0) {
+                lista.innerHTML = '<div class="um-empty">Sin bases de datos. Crea una abajo.</div>';
+                return;
+            }
+            lista.innerHTML = usuarios.map(function(u) {
+                const inicial  = u.nombre.charAt(0).toUpperCase();
+                const isActivo = (u.id === activo);
+                return '<div class="um-user-item' + (isActivo ? ' activo' : '') + '" onclick="umSeleccionar(\'' + u.id + '\')">'
+                    + '<div class="um-avatar' + (isActivo ? ' activo' : '') + '">' + inicial + '</div>'
+                    + '<div class="um-info">'
+                        + '<div class="um-name">' + escHtml(u.nombre)
+                            + (isActivo ? ' <span class="um-activo-badge">activo</span>' : '')
+                        + '</div>'
+                        + '<div class="um-id-text">ID: ' + u.id.substring(0,24) + '…</div>'
+                    + '</div>'
+                    + '<button class="um-del-btn" onclick="event.stopPropagation();umEliminar(\'' + u.id + '\')" title="Eliminar">🗑</button>'
+                + '</div>';
+            }).join('');
+        }
+
+        function umSeleccionar(id) {
+            umSetActivo(id);
+            cerrarSelectorUsuario();
+            if (window._umCambiarUsuario) {
+                window._umCambiarUsuario(id);
+            } else {
+                // Module not ready yet — retry after it loads
+                window._umPendingUserId = id;
+            }
+        }
+
+        function abrirSelectorUsuario() {
+            umRenderLista();
+            document.getElementById('user-modal-overlay').classList.remove('hidden');
+        }
+
+        function cerrarSelectorUsuario() {
+            document.getElementById('user-modal-overlay').classList.add('hidden');
+        }
+
+        function umOverlayClick(e) {
+            if (e.target === document.getElementById('user-modal-overlay')) {
+                if (umGetActivo()) cerrarSelectorUsuario();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const inp = document.getElementById('um-new-name');
+            if (inp) inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') umCrearUsuario(); });
+        });
+    </script>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, remove, onValue }
@@ -1275,6 +1586,8 @@
         let editIdx = { r:null, c:null, s:null, a:null };
         let tempMovimientos = [];
         let firebaseListo = false;
+        let _unsubscribeDB = null;   // listener activo actual
+        let _rutaActual   = null;    // ruta firebase activa
 
         function setSyncStatus(e) {
             const dot=document.getElementById('sync-dot'), lbl=document.getElementById('sync-label');
@@ -1283,8 +1596,31 @@
             if(e==='sync')    {dot.className='';       lbl.textContent='Guardando…';}
         }
 
-        (function arrancarListeners() {
-            onValue(ref(fireDB,'conta'), (snap) => {
+        function actualizarHeaderUsuario() {
+            const nombre = umGetNombreActivo();
+            const pill = document.getElementById('header-user-pill');
+            const pillName = document.getElementById('pill-name-text');
+            const pillAvatar = document.getElementById('pill-avatar-text');
+            const dbName = document.getElementById('header-db-name');
+            if (nombre) {
+                pillName.textContent = nombre;
+                pillAvatar.textContent = nombre.charAt(0).toUpperCase();
+                if(dbName) dbName.textContent = nombre;
+            } else {
+                pillName.textContent = '—';
+                pillAvatar.textContent = '?';
+                if(dbName) dbName.textContent = 'Sin usuario';
+            }
+        }
+
+        function arrancarListeners(userId) {
+            // Desconectar listener anterior si existe
+            if (_unsubscribeDB) { try { _unsubscribeDB(); } catch(e){} _unsubscribeDB = null; }
+            firebaseListo = false;
+            const ruta = 'usuarios/' + userId + '/conta';
+            _rutaActual = ruta;
+            setSyncStatus('offline');
+            _unsubscribeDB = onValue(ref(fireDB, ruta), (snap) => {
                 const d=snap.val();
                 if(d){
                     db.rubros      = d.rubros      ? Object.values(d.rubros)      : [];
@@ -1294,7 +1630,6 @@
                     db.polizas     = d.polizas     ? Object.values(d.polizas).map(p=>{if(p.movimientos&&!Array.isArray(p.movimientos))p.movimientos=Object.values(p.movimientos);return p;}) : [];
                     db.asientos    = d.asientos    ? Object.values(d.asientos)    : [];
                     db.config      = d.config      || {ivaDefault:""};
-                    // Filtrar movimientos: solo los que tengan idAsiento valido
                     const idsValidos = new Set(db.asientos.map(a => a.id));
                     const movsRaw = d.movimientos ? Object.values(d.movimientos) : [];
                     db.movimientos = movsRaw.filter(m => m && m.idAsiento && idsValidos.has(m.idAsiento));
@@ -1311,6 +1646,37 @@
                 document.getElementById('loading-overlay').classList.add('hidden');
                 _ssInit();
             });
+        }
+
+        // ── Callback desde el script no-module al cambiar usuario ──
+        window._umCambiarUsuario = function(userId) {
+            db={rubros:[],cuentas:[],subcuentas:[],asientos:[],movimientos:[],kardex:[],polizas:[],config:{ivaDefault:""}};
+            renderizar();
+            actualizarHeaderUsuario();
+            document.getElementById('loading-overlay').classList.remove('hidden');
+            arrancarListeners(userId);
+        };
+
+        // ── Arranque inicial ──────────────────────────────────────
+        (function inicioMultiUsuario() {
+            // Handle case where umSeleccionar was called before module loaded
+            const pendingId = window._umPendingUserId;
+            if (pendingId) {
+                window._umPendingUserId = null;
+                actualizarHeaderUsuario();
+                arrancarListeners(pendingId);
+                return;
+            }
+            const userId = umGetActivo();
+            if (!userId) {
+                document.getElementById('loading-overlay').classList.add('hidden');
+                umRenderLista();
+                document.getElementById('user-modal-overlay').classList.remove('hidden');
+                actualizarHeaderUsuario();
+            } else {
+                actualizarHeaderUsuario();
+                arrancarListeners(userId);
+            }
         })();
 
         function ao(arr){const o={};arr.forEach((x,i)=>o[i]=x);return o;}
@@ -1318,9 +1684,10 @@
 
         window.guardarDB = async function() {
             if(!firebaseListo) return showError("Sin conexión al servidor.");
+            if(!_rutaActual)   return showError("No hay base de datos seleccionada.");
             setSyncStatus('sync');
             try {
-                const kardexObj = {}; (db.kardex||[]).forEach((k,i)=>{ kardexObj['K_'+i]=k; }); const polObj={}; (db.polizas||[]).forEach((p,i)=>{polObj['P_'+i]=p;}); await set(ref(fireDB,'conta'),{rubros:ao(db.rubros),cuentas:ao(db.cuentas),subcuentas:ao(db.subcuentas),asientos:ao(db.asientos),movimientos:aoMovs(db.movimientos),config:db.config,kardex:kardexObj,polizas:polObj});
+                const kardexObj = {}; (db.kardex||[]).forEach((k,i)=>{ kardexObj['K_'+i]=k; }); const polObj={}; (db.polizas||[]).forEach((p,i)=>{polObj['P_'+i]=p;}); await set(ref(fireDB,_rutaActual),{rubros:ao(db.rubros),cuentas:ao(db.cuentas),subcuentas:ao(db.subcuentas),asientos:ao(db.asientos),movimientos:aoMovs(db.movimientos),config:db.config,kardex:kardexObj,polizas:polObj});
                 setSyncStatus('online');
             } catch(e){setSyncStatus('offline');showError("Error al guardar: "+e.message);}
         };
@@ -1331,7 +1698,7 @@
             document.getElementById(id).classList.add('active');
             if(el) el.classList.add('active');
             if(id==='win-asientos'&&editIdx.a===null) iniciarAsiento();
-            if(id==='win-reportes'){ if(!document.getElementById('rep_fi').value) resetPeriodo(); else vistaReporte(); }
+            if(id==='win-reportes'){ resetPeriodo(); }
             if(id==='win-polizas'){ if(!document.getElementById('pol_fecha').value){const hoy=new Date();document.getElementById('pol_fecha').value=hoy.getFullYear()+'-'+String(hoy.getMonth()+1).padStart(2,'0')+'-'+String(hoy.getDate()).padStart(2,'0');} if(typeof syncPolConfigUI==='function') syncPolConfigUI(); if(typeof filtrarPolizas==='function') filtrarPolizas(); if(typeof renderPendientes==='function') renderPendientes(); }
             renderizar();
         };
@@ -1699,6 +2066,30 @@
         ══════════════════════════════════════════ */
 
         // Config
+        window.guardarEjercicio = function() {
+            const val = parseInt(document.getElementById('cfg_ejercicio').value);
+            if (!val || val < 2000 || val > 2099) return;
+            db.config.ejercicio = val;
+            guardarDB();
+            syncEjercicioUI();
+        };
+
+        function syncEjercicioUI() {
+            const y = (db.config && db.config.ejercicio) ? db.config.ejercicio : new Date().getFullYear();
+            const inp = document.getElementById('cfg_ejercicio');
+            if (inp && !inp.value) inp.value = y;
+            else if (inp) inp.value = y;
+            const preview = document.getElementById('cfg_ejercicio_preview');
+            const previewTxt = document.getElementById('cfg_ejercicio_preview_text');
+            if (preview && previewTxt) {
+                previewTxt.textContent = ' 01/01/' + y + ' al 31/12/' + y;
+                preview.style.display = 'block';
+            }
+            // Update the reset button label in reportes
+            const resetBtn = document.getElementById('btn-reset-periodo');
+            if (resetBtn) resetBtn.textContent = '↺ ' + y;
+        }
+
         window.guardarConfigInv = function() {
             const m = document.getElementById('cfg_inv_metodo').value;
             if (!db.config) db.config = {};
@@ -1971,7 +2362,14 @@
         function renderTempMovimientos(){
             let sd=0,sh=0;const tb=document.getElementById('lista-temp-mov');
             if(tempMovimientos.length===0){tb.innerHTML='<tr class="empty-row"><td colspan="4">Sin movimientos</td></tr>';}
-            else{tb.innerHTML=tempMovimientos.map((m,i)=>{sd+=m.debe;sh+=m.haber;
+            else{
+            // Ordenar: primero Debe, luego Haber; dentro de cada grupo por código de subcuenta
+            const _ordenados=tempMovimientos.map((m,idx)=>({...m,_oi:idx})).sort((a,b)=>{
+                const ga=(a.debe>0)?0:1,gb=(b.debe>0)?0:1;
+                if(ga!==gb)return ga-gb;
+                return (a.subcuenta||'').localeCompare(b.subcuenta||'');
+            });
+            tb.innerHTML=_ordenados.map((m)=>{const i=m._oi;sd+=m.debe;sh+=m.haber;
                 let badge='';
                 if(m.esInv && m.cantidadKardex!=null){
                     if(m.cantidadKardex === 0){
@@ -2150,6 +2548,7 @@
             // Re-render filtered lists
             filtrarDatos('r'); filtrarDatos('c'); filtrarDatos('s'); filtrarDatos('a');
             syncConfigInvUI();
+            syncEjercicioUI();
 
             // Populate form searchable selects
             ssLoad('c_padre', db.rubros.map(r=>({value:r.codigo, code:r.codigo, name:r.nombre})));
@@ -2695,7 +3094,7 @@
             showToast('ok', `✅ ${n} ${nombres[tipo]} importado(s) correctamente`);
         };
 
-        window.descargarJSON=function(){const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download='backup_contaapp.json';l.click();};
+        window.descargarJSON=function(){const nombre=(umGetNombreActivo()||'contaapp').replace(/[^a-z0-9]/gi,'_').toLowerCase();const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),l=document.createElement("a");l.href=URL.createObjectURL(b);l.download='backup_'+nombre+'_'+new Date().toISOString().substring(0,10)+'.json';l.click();};
         window.triggerImportar=function(){document.getElementById('file-input').click();};
         window.leerArchivo=async function(input){
             const f=input.files[0];if(!f)return;
@@ -2737,7 +3136,7 @@
         };
 
         window.borrarTodo=async function(){
-            if(prompt("Escribe BORRAR para confirmar:")==='BORRAR'){await remove(ref(fireDB,'conta'));db={rubros:[],cuentas:[],subcuentas:[],asientos:[],movimientos:[],kardex:[],polizas:[],config:{ivaDefault:""}};renderizar();showSuccess("Base de datos eliminada");}
+            if(prompt("Escribe BORRAR para confirmar:")==='BORRAR'){if(!_rutaActual){showError('No hay base de datos activa.');return;}await remove(ref(fireDB,_rutaActual));db={rubros:[],cuentas:[],subcuentas:[],asientos:[],movimientos:[],kardex:[],polizas:[],config:{ivaDefault:""}};renderizar();showSuccess("Base de datos eliminada");}
         };
         /* ═══════════════════════════════════════════════════════════
            MOTOR DE REPORTES — Libro Diario, Mayor, Hoja de Trabajo
@@ -2805,8 +3204,12 @@
 
         let repTipoActual = 'diario';
 
+        function getEjercicio() {
+            return (db.config && db.config.ejercicio) ? db.config.ejercicio : new Date().getFullYear();
+        }
+
         function resetPeriodo() {
-            const y = new Date().getFullYear();
+            const y = getEjercicio();
             document.getElementById('rep_fi').value = `${y}-01-01`;
             document.getElementById('rep_ff').value = `${y}-12-31`;
             vistaReporte();
@@ -2843,7 +3246,8 @@
             if (tipo === 'kardex')     inicializarSelectorKardex();
 
             let resultado;
-            if (tipo === 'diario')     resultado = buildTablaInlineDiario(fechas);
+            const vistaDiario = (document.getElementById('diario_vista')||{}).value || 'subcuentas';
+            if (tipo === 'diario')     resultado = buildTablaInlineDiario(fechas, vistaDiario);
             if (tipo === 'mayor')      resultado = buildTablaInlineMayor(fechas, nivelMayor);
             if (tipo === 'hoja')       resultado = buildTablaInlineHoja(fechas, nivelHoja);
             if (tipo === 'catalogo')   resultado = buildTablaInlineCatalogo();
@@ -2863,25 +3267,121 @@
             }
         };
 
-        function buildTablaInlineDiario(fechas) {
+        // ── Helper: sort movs (Debe first, then Haber; each group by subcuenta code) ──
+        function sortMovs(movs) {
+            return movs.slice().sort((a,b) => {
+                const ga = (a.debe > 0) ? 0 : 1, gb = (b.debe > 0) ? 0 : 1;
+                if (ga !== gb) return ga - gb;
+                return (a.subcuenta||'').localeCompare(b.subcuenta||'');
+            });
+        }
+
+        function buildTablaInlineDiario(fechas, vista) {
+            vista = vista || 'subcuentas';
             const mapA = mapAsientosFecha(fechas);
             const asientosFiltrados = Object.values(mapA).sort((a,b)=>a.fecha.localeCompare(b.fecha)||Number(a.no)-Number(b.no));
             if (asientosFiltrados.length===0) return {vacio:true};
             let rows='', totalD=0, totalH=0;
+
             asientosFiltrados.forEach(a => {
-                const movs=db.movimientos.filter(m=>m.idAsiento===a.id);
-                let sumD=0,sumH=0;
-                movs.forEach(m=>{sumD+=Number(m.debe)||0;sumH+=Number(m.haber)||0;});
-                totalD+=sumD;totalH+=sumH;
-                rows+=`<tr class="enc-row"><td colspan="5">Asiento N° ${a.no} — ${fmtFecha(a.fecha)} — ${fmtTipo(a.tipo)}</td></tr>`;
-                rows+=`<tr class="col-head"><td>Cta.Mayor</td><td>Subcuenta</td><td>Nombre</td><td>Debe</td><td>Haber</td></tr>`;
-                movs.forEach(m=>{rows+=`<tr><td>${getPadre(m.subcuenta)}</td><td>${m.subcuenta}</td><td>${getNomSub(m.subcuenta)}</td><td class="num">${fmtMon(m.debe)}</td><td class="num">${fmtMon(m.haber)}</td></tr>`;});
-                rows+=`<tr class="tot-row"><td colspan="3" style="text-align:right;">Sumas:</td><td class="num">${fmtMonZ(sumD)}</td><td class="num">${fmtMonZ(sumH)}</td></tr>`;
-                rows+=`<tr class="glosa-row"><td colspan="5">${a.concepto}</td></tr>`;
-                rows+=`<tr class="spacer-row"><td colspan="5"></td></tr>`;
+                const movs = sortMovs(db.movimientos.filter(m=>m.idAsiento===a.id));
+                let sumD=0, sumH=0;
+                movs.forEach(m=>{sumD+=Number(m.debe)||0; sumH+=Number(m.haber)||0;});
+                totalD+=sumD; totalH+=sumH;
+
+                if (vista === 'cuentas') {
+                    // ── OPCIÓN 1: Solo cuenta mayor ─────────────────────────────
+                    // Agrupar movimientos por cuenta mayor y sumar
+                    const byCtaMayor = {};
+                    movs.forEach(m => {
+                        const c = getPadre(m.subcuenta);
+                        if (!byCtaMayor[c]) byCtaMayor[c] = {d:0, h:0};
+                        byCtaMayor[c].d += Number(m.debe)||0;
+                        byCtaMayor[c].h += Number(m.haber)||0;
+                    });
+                    // Sort: debe-first by code
+                    const cuentasSorted = Object.keys(byCtaMayor).sort((a,b) => {
+                        const ga = byCtaMayor[a].d > 0 ? 0 : 1;
+                        const gb = byCtaMayor[b].d > 0 ? 0 : 1;
+                        if (ga !== gb) return ga - gb;
+                        return a.localeCompare(b);
+                    });
+                    rows += `<tr class="enc-row"><td colspan="4">Asiento N° ${a.no} — ${fmtFecha(a.fecha)} — ${fmtTipo(a.tipo)}</td></tr>`;
+                    rows += `<tr class="col-head"><td>Cta. Mayor</td><td>Nombre</td><td>Debe</td><td>Haber</td></tr>`;
+                    cuentasSorted.forEach(c => {
+                        const tot = byCtaMayor[c];
+                        rows += `<tr>
+                            <td class="td-code" style="font-weight:700;">${c}</td>
+                            <td>${getNomCuenta(c)}</td>
+                            <td class="num">${fmtMon(tot.d)}</td>
+                            <td class="num">${fmtMon(tot.h)}</td>
+                        </tr>`;
+                    });
+                    rows += `<tr class="tot-row"><td colspan="2" style="text-align:right;">Sumas:</td><td class="num">${fmtMonZ(sumD)}</td><td class="num">${fmtMonZ(sumH)}</td></tr>`;
+                    rows += `<tr class="glosa-row"><td colspan="4">${a.concepto}</td></tr>`;
+                    rows += `<tr class="spacer-row"><td colspan="4"></td></tr>`;
+
+                } else if (vista === 'parcial') {
+                    // ── OPCIÓN 3: Parcial — subcuentas indentadas + total cuenta ──
+                    // Agrupar por cuenta mayor conservando orden debe/haber
+                    const grouped = {};   // { ctaMayor: [movs] }
+                    const ctaOrder = [];
+                    movs.forEach(m => {
+                        const c = getPadre(m.subcuenta);
+                        if (!grouped[c]) { grouped[c] = []; ctaOrder.push(c); }
+                        grouped[c].push(m);
+                    });
+                    rows += `<tr class="enc-row"><td colspan="5">Asiento N° ${a.no} — ${fmtFecha(a.fecha)} — ${fmtTipo(a.tipo)}</td></tr>`;
+                    rows += `<tr class="col-head"><td>Cta. Mayor</td><td>Subcuenta / Nombre</td><td style="text-align:right;font-size:0.62rem;">Parcial</td><td>Debe</td><td>Haber</td></tr>`;
+                    ctaOrder.forEach(c => {
+                        const ctaMovs = grouped[c];
+                        let ctaD = 0, ctaH = 0;
+                        ctaMovs.forEach(m => { ctaD += Number(m.debe)||0; ctaH += Number(m.haber)||0; });
+                        // Subcuenta rows (indented, parcial column)
+                        ctaMovs.forEach(m => {
+                            const d = Number(m.debe)||0, h = Number(m.haber)||0;
+                            const parcial = d > 0 ? fmtMon(d) : fmtMon(h);
+                            rows += `<tr style="background:#fafaf8;">
+                                <td style="color:#aaa;font-size:0.7rem;padding-left:8px;"></td>
+                                <td style="padding-left:20px;font-size:0.75rem;color:var(--muted);">
+                                    <span style="font-weight:600;color:var(--accent);margin-right:5px;">${m.subcuenta}</span>${getNomSub(m.subcuenta)}
+                                </td>
+                                <td class="num" style="font-size:0.75rem;color:var(--muted);">${parcial}</td>
+                                <td></td><td></td>
+                            </tr>`;
+                        });
+                        // Cuenta total row
+                        rows += `<tr>
+                            <td style="font-weight:700;color:var(--accent);">${c}</td>
+                            <td style="font-weight:600;">${getNomCuenta(c)}</td>
+                            <td></td>
+                            <td class="num">${fmtMon(ctaD)}</td>
+                            <td class="num">${fmtMon(ctaH)}</td>
+                        </tr>`;
+                    });
+                    rows += `<tr class="tot-row"><td colspan="3" style="text-align:right;">Sumas:</td><td class="num">${fmtMonZ(sumD)}</td><td class="num">${fmtMonZ(sumH)}</td></tr>`;
+                    rows += `<tr class="glosa-row"><td colspan="5">${a.concepto}</td></tr>`;
+                    rows += `<tr class="spacer-row"><td colspan="5"></td></tr>`;
+
+                } else {
+                    // ── OPCIÓN 2: Solo subcuentas (default) ─────────────────────
+                    rows += `<tr class="enc-row"><td colspan="5">Asiento N° ${a.no} — ${fmtFecha(a.fecha)} — ${fmtTipo(a.tipo)}</td></tr>`;
+                    rows += `<tr class="col-head"><td>Cta.Mayor</td><td>Subcuenta</td><td>Nombre</td><td>Debe</td><td>Haber</td></tr>`;
+                    movs.forEach(m=>{rows+=`<tr><td>${getPadre(m.subcuenta)}</td><td>${m.subcuenta}</td><td>${getNomSub(m.subcuenta)}</td><td class="num">${fmtMon(m.debe)}</td><td class="num">${fmtMon(m.haber)}</td></tr>`;});
+                    rows += `<tr class="tot-row"><td colspan="3" style="text-align:right;">Sumas:</td><td class="num">${fmtMonZ(sumD)}</td><td class="num">${fmtMonZ(sumH)}</td></tr>`;
+                    rows += `<tr class="glosa-row"><td colspan="5">${a.concepto}</td></tr>`;
+                    rows += `<tr class="spacer-row"><td colspan="5"></td></tr>`;
+                }
             });
+
+            const colSpan = (vista === 'cuentas') ? 4 : 5;
+            const thead = (vista === 'cuentas')
+                ? `<tr><th>Cta.Mayor</th><th>Nombre</th><th>Debe</th><th>Haber</th></tr>`
+                : (vista === 'parcial')
+                    ? `<tr><th>Cta.Mayor</th><th>Subcuenta / Nombre</th><th>Parcial</th><th>Debe</th><th>Haber</th></tr>`
+                    : `<tr><th>Cta.Mayor</th><th>Subcuenta</th><th>Nombre</th><th>Debe</th><th>Haber</th></tr>`;
             return {
-                html:`<table><thead><tr><th>Cta.Mayor</th><th>Subcuenta</th><th>Nombre</th><th>Debe</th><th>Haber</th></tr></thead><tbody>${rows}</tbody></table>`,
+                html:`<table><thead>${thead}</thead><tbody>${rows}</tbody></table>`,
                 resumen:`${asientosFiltrados.length} asientos &nbsp;|&nbsp; Debe: ${fmtMonZ(totalD)} &nbsp;|&nbsp; Haber: ${fmtMonZ(totalH)}`
             };
         }
@@ -3084,7 +3584,7 @@
             const nivelMayor=(document.getElementById('mayor_nivel')||{}).value||'subcuenta';
             const nivelHoja=(document.getElementById('hoja_nivel')||{}).value||'subcuenta';
             let html='',titulo='',filename='';
-            if(tipo==='diario')      {html=buildLibroDiario(fechas);           titulo='Libro Diario';          filename='libro_diario';}
+            const _vd=(document.getElementById('diario_vista')||{}).value||'subcuentas'; if(tipo==='diario'){html=buildLibroDiario(fechas,_vd);titulo='Libro Diario';filename='libro_diario';}
             if(tipo==='mayor')       {html=buildLibroMayor(fechas,nivelMayor); titulo='Libro Mayor';           filename='libro_mayor';}
             if(tipo==='hoja')        {html=buildHojaTrabajo(fechas,nivelHoja); titulo='Hoja de Trabajo';       filename='hoja_trabajo';}
             if(tipo==='catalogo')    {html=buildCatalogo();                    titulo='Catálogo de Cuentas';   filename='catalogo_cuentas';}
@@ -3099,7 +3599,7 @@
             const nivelMayor=(document.getElementById('mayor_nivel')||{}).value||'subcuenta';
             const nivelHoja=(document.getElementById('hoja_nivel')||{}).value||'subcuenta';
             let html='', titulo='';
-            if(tipo==='diario')     { html=buildLibroDiario(fechas);             titulo='Libro_Diario_'+fechas.fi+'_a_'+fechas.ff; }
+            const _vd2=(document.getElementById('diario_vista')||{}).value||'subcuentas'; if(tipo==='diario'){ html=buildLibroDiario(fechas,_vd2); titulo='Libro_Diario_'+fechas.fi+'_a_'+fechas.ff; }
             if(tipo==='mayor')      { html=buildLibroMayor(fechas,nivelMayor);   titulo='Libro_Mayor_'+fechas.fi+'_a_'+fechas.ff; }
             if(tipo==='hoja')       { html=buildHojaTrabajo(fechas,nivelHoja);   titulo='Hoja_Trabajo_'+fechas.fi+'_a_'+fechas.ff; }
             if(tipo==='catalogo')   { html=buildCatalogo();                      titulo='Catalogo_Cuentas'; }
@@ -3117,7 +3617,7 @@
             const nivelMayor = document.getElementById('mayor_nivel') ? document.getElementById('mayor_nivel').value : 'subcuenta';
             const nivelHoja  = document.getElementById('hoja_nivel')  ? document.getElementById('hoja_nivel').value  : 'subcuenta';
 
-            if (tipo === 'diario')  { html = buildLibroDiario(fechas);             titulo = 'Libro Diario';       filename = 'libro_diario'; }
+            const _vd3=(document.getElementById('diario_vista')||{}).value||'subcuentas'; if (tipo === 'diario') { html = buildLibroDiario(fechas,_vd3); titulo = 'Libro Diario'; filename = 'libro_diario'; }
             if (tipo === 'mayor')   { html = buildLibroMayor(fechas, nivelMayor);  titulo = 'Libro Mayor';        filename = 'libro_mayor'; }
             if (tipo === 'hoja')    { html = buildHojaTrabajo(fechas, nivelHoja);  titulo = 'Hoja de Trabajo';    filename = 'hoja_trabajo'; }
             if (tipo === 'catalogo'){ html = buildCatalogo();                      titulo = 'Catálogo de Cuentas'; filename = 'catalogo_cuentas'; }
@@ -3130,37 +3630,96 @@
         // ══════════════════════════════════════════════════════════
         // 1. LIBRO DIARIO
         // ══════════════════════════════════════════════════════════
-        function buildLibroDiario(fechas) {
+        function buildLibroDiario(fechas, vista) {
+            vista = vista || 'subcuentas';
             const mapA = mapAsientosFecha(fechas);
             const asientosFiltrados = Object.values(mapA)
                 .sort((a,b) => a.fecha.localeCompare(b.fecha) || Number(a.no) - Number(b.no));
 
             if (asientosFiltrados.length === 0){showWarn("No hay asientos en ese período.");return '';}
 
+            const cs = 'border:1px solid #ccc;padding:4px 6px;font-size:11px;';
+            const csH = cs + 'background:#1a3c5e;color:#fff;font-weight:700;text-align:center;';
+            const csEnc = cs + 'background:#dce8f5;font-weight:700;';
+            const csTot = cs + 'background:#f8f4ec;font-weight:700;border-top:2px solid #c8a96e;';
+            const csGlosa = cs + 'font-style:italic;color:#555;font-size:10px;';
+            const csNum = cs + 'text-align:right;font-variant-numeric:tabular-nums;';
+            const csSub = cs + 'padding-left:18px;font-size:10px;color:#666;';
+
             let rows = '';
+            let totalD = 0, totalH = 0;
+
+            const vistaLabel = {'subcuentas':'Subcuentas','cuentas':'Solo Cuenta Mayor','parcial':'Parcial'}[vista] || vista;
+            const colCount = (vista === 'cuentas') ? 4 : 5;
+
             asientosFiltrados.forEach(a => {
-                const movs = db.movimientos.filter(m => m.idAsiento === a.id);
+                const movs = sortMovs(db.movimientos.filter(m => m.idAsiento === a.id));
                 let sumD = 0, sumH = 0;
                 movs.forEach(m => { sumD += Number(m.debe)||0; sumH += Number(m.haber)||0; });
+                totalD += sumD; totalH += sumH;
 
-                rows += `<tr class="enc-row"><td colspan="5">Asiento N° ${a.no} — ${fmtFecha(a.fecha)} — ${fmtTipo(a.tipo)}</td></tr>`;
-                rows += `<tr class="col-head"><td>Cta. Mayor</td><td>Subcuenta</td><td>Nombre</td><td>Debe</td><td>Haber</td></tr>`;
-                movs.forEach(m => {
-                    rows += `<tr>
-                        <td>${getPadre(m.subcuenta)}</td>
-                        <td>${m.subcuenta}</td>
-                        <td>${getNomSub(m.subcuenta)}</td>
-                        <td class="num">${fmtMon(m.debe)}</td>
-                        <td class="num">${fmtMon(m.haber)}</td>
-                    </tr>`;
-                });
-                rows += `<tr class="tot-row"><td colspan="3" style="text-align:right;font-weight:700;">Sumas:</td><td class="num">${fmtMonZ(sumD)}</td><td class="num">${fmtMonZ(sumH)}</td></tr>`;
-                rows += `<tr class="glosa-row"><td colspan="5">${a.concepto}</td></tr>`;
-                rows += `<tr class="spacer-row"><td colspan="5"></td></tr>`;
+                if (vista === 'cuentas') {
+                    const byCtaMayor = {};
+                    const ctaOrder = [];
+                    movs.forEach(m => {
+                        const c = getPadre(m.subcuenta);
+                        if (!byCtaMayor[c]) { byCtaMayor[c]={d:0,h:0}; ctaOrder.push(c); }
+                        byCtaMayor[c].d += Number(m.debe)||0;
+                        byCtaMayor[c].h += Number(m.haber)||0;
+                    });
+                    rows += '<tr><td colspan="4" style="' + csEnc + '">Asiento N° ' + a.no + ' — ' + fmtFecha(a.fecha) + ' — ' + fmtTipo(a.tipo) + '</td></tr>';
+                    rows += '<tr><th style="' + csH + '">Cta.Mayor</th><th style="' + csH + '">Nombre</th><th style="' + csH + '">Debe</th><th style="' + csH + '">Haber</th></tr>';
+                    ctaOrder.forEach(c => {
+                        const t = byCtaMayor[c];
+                        rows += '<tr><td style="' + cs + 'font-weight:700;color:#1a3c5e;">' + c + '</td><td style="' + cs + '">' + getNomCuenta(c) + '</td><td style="' + csNum + '">' + fmtMon(t.d) + '</td><td style="' + csNum + '">' + fmtMon(t.h) + '</td></tr>';
+                    });
+                    rows += '<tr><td colspan="2" style="' + csTot + 'text-align:right;">Sumas:</td><td style="' + csTot + 'text-align:right;">' + fmtMonZ(sumD) + '</td><td style="' + csTot + 'text-align:right;">' + fmtMonZ(sumH) + '</td></tr>';
+                    rows += '<tr><td colspan="4" style="' + csGlosa + '">' + (a.concepto||'') + '</td></tr>';
+                    rows += '<tr><td colspan="4" style="height:6px;border:none;"></td></tr>';
+
+                } else if (vista === 'parcial') {
+                    const grouped = {}, ctaOrder = [];
+                    movs.forEach(m => {
+                        const c = getPadre(m.subcuenta);
+                        if (!grouped[c]) { grouped[c]=[]; ctaOrder.push(c); }
+                        grouped[c].push(m);
+                    });
+                    rows += '<tr><td colspan="5" style="' + csEnc + '">Asiento N° ' + a.no + ' — ' + fmtFecha(a.fecha) + ' — ' + fmtTipo(a.tipo) + '</td></tr>';
+                    rows += '<tr><th style="' + csH + '">Cta.Mayor</th><th style="' + csH + '">Subcuenta / Nombre</th><th style="' + csH + '">Parcial</th><th style="' + csH + '">Debe</th><th style="' + csH + '">Haber</th></tr>';
+                    ctaOrder.forEach(c => {
+                        const ctaMovs = grouped[c];
+                        let ctaD=0, ctaH=0;
+                        ctaMovs.forEach(m => { ctaD+=Number(m.debe)||0; ctaH+=Number(m.haber)||0; });
+                        ctaMovs.forEach(m => {
+                            const d=Number(m.debe)||0, h=Number(m.haber)||0;
+                            rows += '<tr><td style="' + cs + 'color:#aaa;"></td><td style="' + csSub + '">' + m.subcuenta + ' — ' + getNomSub(m.subcuenta) + '</td><td style="' + csNum + 'font-size:10px;">' + (d>0?fmtMon(d):fmtMon(h)) + '</td><td style="' + cs + '"></td><td style="' + cs + '"></td></tr>';
+                        });
+                        rows += '<tr><td style="' + cs + 'font-weight:700;color:#1a3c5e;">' + c + '</td><td style="' + cs + 'font-weight:600;">' + getNomCuenta(c) + '</td><td style="' + cs + '"></td><td style="' + csNum + '">' + fmtMon(ctaD) + '</td><td style="' + csNum + '">' + fmtMon(ctaH) + '</td></tr>';
+                    });
+                    rows += '<tr><td colspan="3" style="' + csTot + 'text-align:right;">Sumas:</td><td style="' + csTot + 'text-align:right;">' + fmtMonZ(sumD) + '</td><td style="' + csTot + 'text-align:right;">' + fmtMonZ(sumH) + '</td></tr>';
+                    rows += '<tr><td colspan="5" style="' + csGlosa + '">' + (a.concepto||'') + '</td></tr>';
+                    rows += '<tr><td colspan="5" style="height:6px;border:none;"></td></tr>';
+
+                } else {
+                    rows += '<tr><td colspan="5" style="' + csEnc + '">Asiento N° ' + a.no + ' — ' + fmtFecha(a.fecha) + ' — ' + fmtTipo(a.tipo) + '</td></tr>';
+                    rows += '<tr><th style="' + csH + '">Cta.Mayor</th><th style="' + csH + '">Subcuenta</th><th style="' + csH + '">Nombre</th><th style="' + csH + '">Debe</th><th style="' + csH + '">Haber</th></tr>';
+                    movs.forEach(m => {
+                        rows += '<tr><td style="' + cs + 'font-weight:700;color:#1a3c5e;">' + getPadre(m.subcuenta) + '</td><td style="' + cs + '">' + m.subcuenta + '</td><td style="' + cs + '">' + getNomSub(m.subcuenta) + '</td><td style="' + csNum + '">' + fmtMon(m.debe) + '</td><td style="' + csNum + '">' + fmtMon(m.haber) + '</td></tr>';
+                    });
+                    rows += '<tr><td colspan="3" style="' + csTot + 'text-align:right;">Sumas:</td><td style="' + csTot + 'text-align:right;">' + fmtMonZ(sumD) + '</td><td style="' + csTot + 'text-align:right;">' + fmtMonZ(sumH) + '</td></tr>';
+                    rows += '<tr><td colspan="5" style="' + csGlosa + '">' + (a.concepto||'') + '</td></tr>';
+                    rows += '<tr><td colspan="5" style="height:6px;border:none;"></td></tr>';
+                }
             });
 
-            return wrapTable('Libro Diario', fechas,
-                `<table><thead><tr><th>Cta. Mayor</th><th>Subcuenta</th><th>Nombre</th><th>Debe</th><th>Haber</th></tr></thead><tbody>${rows}</tbody></table>`);
+            const thead = (vista === 'cuentas')
+                ? '<tr><th>Cta.Mayor</th><th>Nombre</th><th>Debe</th><th>Haber</th></tr>'
+                : (vista === 'parcial')
+                    ? '<tr><th>Cta.Mayor</th><th>Subcuenta / Nombre</th><th>Parcial</th><th>Debe</th><th>Haber</th></tr>'
+                    : '<tr><th>Cta. Mayor</th><th>Subcuenta</th><th>Nombre</th><th>Debe</th><th>Haber</th></tr>';
+
+            const tabla = '<table style="width:100%;border-collapse:collapse;">' + thead + '<tbody>' + rows + '</tbody></table>';
+            return wrapTable('Libro Diario — ' + vistaLabel, fechas, tabla);
         }
 
         // ══════════════════════════════════════════════════════════
@@ -4040,7 +4599,13 @@
                 return;
             }
             let sumD = 0, sumH = 0;
-            tbody.innerHTML = polTempMovs.map((m, i) => {
+            // Ordenar: primero Debe luego Haber, dentro de cada grupo por subcuenta
+            const _polOrdenados = polTempMovs.map((m,idx)=>({...m,_oi:idx})).sort((a,b)=>{
+                const ga=(a.debe>0)?0:1,gb=(b.debe>0)?0:1;
+                if(ga!==gb)return ga-gb;
+                return (a.subcuenta||'').localeCompare(b.subcuenta||'');
+            });
+            tbody.innerHTML = _polOrdenados.map((m, _j) => { const i = m._oi;
                 sumD += m.debe; sumH += m.haber;
                 const pendVal = m.debeOriginal > 0 ? m.debePendiente : m.haberPendiente;
                 const pendStr = pendVal > 0.001 ? '$' + pendVal.toFixed(2) : '✓';
@@ -4337,7 +4902,13 @@
 
             const cs = 'border:1px solid #999;padding:4px 4px;font-size:11px;overflow:hidden;height:28px;';
             let movRows = '';
-            p.movimientos.forEach(m => {
+            // Ordenar: primero Debe luego Haber, dentro de cada grupo por subcuenta
+            const _movsSorted = (p.movimientos||[]).slice().sort((a,b)=>{
+                const ga=(a.debe>0)?0:1,gb=(b.debe>0)?0:1;
+                if(ga!==gb)return ga-gb;
+                return (a.subcuenta||'').localeCompare(b.subcuenta||'');
+            });
+            _movsSorted.forEach(m => {
                 movRows += '<tr>' +
                     '<td style="' + cs + 'text-align:center;">' + (m.cuentaMayor||'') + '</td>' +
                     '<td style="' + cs + 'text-align:center;">' + m.subcuenta + '</td>' +
@@ -4346,7 +4917,7 @@
                     '<td style="' + cs + 'text-align:right;font-variant-numeric:tabular-nums;">' + (m.haber > 0 ? fmtMonZ(m.haber) : '') + '</td>' +
                     '</tr>';
             });
-            for (let i = p.movimientos.length; i < FILAS_MIN; i++) {
+            for (let i = _movsSorted.length; i < FILAS_MIN; i++) {
                 movRows += '<tr><td style="' + cs + '">&nbsp;</td><td style="' + cs + '"></td><td style="' + cs + '"></td><td style="' + cs + '"></td><td style="' + cs + '"></td></tr>';
             }
 
