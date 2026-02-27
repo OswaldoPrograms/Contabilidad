@@ -4332,26 +4332,41 @@
         // PDF
         // ══════════════════════════════════════════════════════════
         function abrirPDF(html, titulo, orientation) {
-            // Método nativo: abre ventana nueva y usa window.print() del navegador.
-            // Genera PDF vectorial de alta calidad sin pasar por canvas ni compresión de imagen.
             orientation = orientation || 'portrait';
             const pageCSS = `@page { size: letter ${orientation}; margin: 10mm 8mm 10mm 8mm; }`;
-            // Inyectar @page con orientación antes del cierre de </style> o al inicio del <head>
+            const extraCSS = pageCSS + `
+                @media print { .no-print { display: none !important; } }
+                td { overflow: visible !important; text-overflow: clip !important; white-space: normal !important; }
+            `;
+            const topBar = `<div class="no-print" style="
+                position:sticky;top:0;z-index:999;background:#1a3c5e;color:#fff;
+                display:flex;align-items:center;justify-content:space-between;
+                padding:10px 20px;font-family:DM Sans,Arial,sans-serif;
+                box-shadow:0 2px 8px rgba(0,0,0,0.25);">
+                <div style="font-size:13px;font-weight:700;">${titulo.replace(/_/g,' ')}</div>
+                <button onclick="window.print()" style="
+                    background:#c8a96e;color:#fff;border:none;border-radius:6px;
+                    padding:8px 20px;font-weight:700;font-size:13px;cursor:pointer;">
+                    &#128438; Imprimir / Guardar PDF
+                </button>
+            </div>`;
             let printHtml = html;
             if (printHtml.includes('</style>')) {
-                printHtml = printHtml.replace('</style>', pageCSS + '</style>');
+                printHtml = printHtml.replace('</style>', extraCSS + '</style>');
             } else {
-                printHtml = printHtml.replace('<head>', '<head><style>' + pageCSS + '</style>');
+                printHtml = printHtml.replace('<head>', '<head><style>' + extraCSS + '</style>');
             }
+            // Quitar botones viejos de imprimir dentro del contenido
+            printHtml = printHtml.replace(/<button[^>]*class="no-print"[^>]*>[\s\S]*?<\/button>/g, '');
+            // Inyectar barra superior
+            printHtml = printHtml.replace('<body>', '<body>' + topBar);
             const win = window.open('', '_blank');
             if (!win) { showError('El navegador bloqueó la ventana emergente. Permite pop-ups para este sitio.'); return; }
             win.document.open();
             win.document.write(printHtml);
             win.document.close();
-            // Disparar print una sola vez: onload si llega a tiempo, si no el setTimeout como fallback
-            let printed = false;
-            win.onload = function() { if (!printed) { printed = true; win.focus(); win.print(); } };
-            setTimeout(function() { if (!printed) { printed = true; try { win.focus(); win.print(); } catch(e) {} } }, 800);
+            // SIN auto-print: el usuario ve el documento, puede seleccionar/copiar texto
+            // y usa el botón dorado para guardar PDF cuando quiera.
         }
 
         // ══════════════════════════════════════════════════════════
@@ -5292,7 +5307,7 @@
             const color = colores[p.tipo] || '#003366';
             const FILAS_MIN = 22;
 
-            const cs = 'border:1px solid #999;padding:4px 4px;font-size:11px;overflow:hidden;height:28px;';
+            const cs = 'border:1px solid #999;padding:4px 4px;font-size:11px;vertical-align:middle;';
             let movRows = '';
             // Ordenar: primero Debe luego Haber, dentro de cada grupo por subcuenta
             const _movsSorted = (p.movimientos||[]).slice().sort((a,b)=>{
@@ -5304,9 +5319,9 @@
                 const esAbono = m.haber > 0;
                 const indentStyle = esAbono ? 'padding-left:18px;' : '';
                 movRows += '<tr>' +
-                    '<td style="' + cs + 'text-align:center;">' + (esAbono ? '' : (m.cuentaMayor||'')) + '</td>' +
+                    '<td style="' + cs + 'text-align:center;">' + (m.cuentaMayor||'') + '</td>' +
                     '<td style="' + cs + 'text-align:center;">' + m.subcuenta + '</td>' +
-                    '<td style="' + cs + 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + indentStyle + '">' + m.nombre + '</td>' +
+                    '<td style="' + cs + indentStyle + '">' + m.nombre + '</td>' +
                     '<td style="' + cs + 'text-align:right;font-variant-numeric:tabular-nums;">' + (m.debe > 0 ? fmtMonZ(m.debe) : '') + '</td>' +
                     '<td style="' + cs + 'text-align:right;font-variant-numeric:tabular-nums;">' + (m.haber > 0 ? fmtMonZ(m.haber) : '') + '</td>' +
                     '</tr>';
@@ -5402,14 +5417,7 @@
                 allHtml += '<div class="pol-page">' + buildPolizaBodyHTML(p) + '</div>';
             });
             allHtml += '</body></html>';
-            const win = window.open('', '_blank');
-            if (!win) { showError('El navegador bloqueó la ventana emergente. Permite pop-ups para este sitio.'); return; }
-            win.document.open();
-            win.document.write(allHtml);
-            win.document.close();
-            let printed = false;
-            win.onload = function() { if (!printed) { printed = true; win.focus(); win.print(); } };
-            setTimeout(function() { if (!printed) { printed = true; try { win.focus(); win.print(); } catch(e) {} } }, 800);
+            abrirPDF(allHtml, 'Polizas_' + (polizas.length) + '_documentos');
         };
 
                 window.exportarPolizasFiltExcel = function() {
