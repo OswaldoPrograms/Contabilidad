@@ -260,7 +260,7 @@
         /* Anchos de columna por tipo de reporte — se sobrescriben por clase en cada tabla */
         /* Diario / Mayor / Hoja: col-codigo, col-nombre, col-importe */
         #rep-tabla-inline col.col-codigo  { width: 90px; }
-        #rep-tabla-inline col.col-nombre  { width: auto; }
+        #rep-tabla-inline col.col-nombre  { width: 160px; }
         #rep-tabla-inline col.col-fecha   { width: 82px; }
         #rep-tabla-inline col.col-asiento { width: 54px; }
         #rep-tabla-inline col.col-num     { width: 90px; }
@@ -3591,6 +3591,7 @@
             const claves=Object.keys(saldos).sort();
             if(claves.length===0)return{vacio:true};
             let totals=new Array(12).fill(0),rows='';
+            const esConsolidado = nivel === 'cuenta';
             claves.forEach(clave=>{
                 const s=saldos[clave];
                 const movD=s[0],movH=s[1],netMov=movD-movH;
@@ -3601,18 +3602,26 @@
                 const activo=netFin>0?netFin:0,pasivo=netFin<0?Math.abs(netFin):0;
                 const vals=[movD,movH,sNormD,sNormH,ajD,ajH,sAjD,sAjH,pygD,pygH,activo,pasivo];
                 vals.forEach((v,i)=>{totals[i]+=v;});
-                const nombre=(nivel==='cuenta')?getNomCuenta(clave):getNomSub(clave);
-                const padreCol=(nivel==='cuenta')?'':getPadre(clave);
-                rows+=`<tr><td>${padreCol}</td><td>${clave}</td><td>${nombre}</td>${vals.map(v=>`<td class="num">${fmtMon(v)}</td>`).join('')}</tr>`;
+                const nombre=esConsolidado?getNomCuenta(clave):getNomSub(clave);
+                if (esConsolidado) {
+                    rows+=`<tr><td>${clave}</td><td>${nombre}</td>${vals.map(v=>`<td class="num">${fmtMon(v)}</td>`).join('')}</tr>`;
+                } else {
+                    rows+=`<tr><td>${getPadre(clave)}</td><td>${clave}</td><td>${nombre}</td>${vals.map(v=>`<td class="num">${fmtMon(v)}</td>`).join('')}</tr>`;
+                }
             });
-            rows+=`<tr class="tot-row"><td colspan="3" style="text-align:right;font-weight:700;">TOTALES</td>${totals.map(v=>`<td class="num">${fmtMonZ(v)}</td>`).join('')}</tr>`;
-            const ths=['Cta.Mayor','Subcuenta','Nombre','Mov.D','Mov.H','Sdo.D','Sdo.H','Aj.D','Aj.H','SAj.D','SAj.H','PyG.D','PyG.H','Activo','Pasivo'];
-            const cgHoja = `<colgroup><col class="col-codigo"><col class="col-codigo"><col style="width:auto">${Array(12).fill('<col class="col-num">').join('')}</colgroup>`;
-            const thsH = ths.map((h,i) => i>=3 ? `<th class="num">${h}</th>` : `<th>${h}</th>`).join('');
-            return {
-                html:`<table>${cgHoja}<thead><tr>${thsH}</tr></thead><tbody>${rows}</tbody></table>`,
-                resumen:`${claves.length} cuentas — Activo: ${fmtMonZ(totals[10])} | Pasivo: ${fmtMonZ(totals[11])}`
-            };
+            if (esConsolidado) {
+                rows+=`<tr class="tot-row"><td colspan="2" style="text-align:right;font-weight:700;">TOTALES</td>${totals.map(v=>`<td class="num">${fmtMonZ(v)}</td>`).join('')}</tr>`;
+                const ths=['Cuenta','Nombre','Mov.D','Mov.H','Sdo.D','Sdo.H','Aj.D','Aj.H','SAj.D','SAj.H','PyG.D','PyG.H','Activo','Pasivo'];
+                const cgHoja=`<colgroup><col class="col-codigo"><col class="col-nombre">${Array(12).fill('<col class="col-num">').join('')}</colgroup>`;
+                const thsH=ths.map((h,i)=>i>=2?`<th class="num">${h}</th>`:`<th>${h}</th>`).join('');
+                return {html:`<table>${cgHoja}<thead><tr>${thsH}</tr></thead><tbody>${rows}</tbody></table>`,resumen:`${claves.length} cuentas — Activo: ${fmtMonZ(totals[10])} | Pasivo: ${fmtMonZ(totals[11])}`};
+            } else {
+                rows+=`<tr class="tot-row"><td colspan="3" style="text-align:right;font-weight:700;">TOTALES</td>${totals.map(v=>`<td class="num">${fmtMonZ(v)}</td>`).join('')}</tr>`;
+                const ths=['Cta.Mayor','Subcuenta','Nombre','Mov.D','Mov.H','Sdo.D','Sdo.H','Aj.D','Aj.H','SAj.D','SAj.H','PyG.D','PyG.H','Activo','Pasivo'];
+                const cgHoja=`<colgroup><col class="col-codigo"><col class="col-codigo"><col class="col-nombre">${Array(12).fill('<col class="col-num">').join('')}</colgroup>`;
+                const thsH=ths.map((h,i)=>i>=3?`<th class="num">${h}</th>`:`<th>${h}</th>`).join('');
+                return {html:`<table>${cgHoja}<thead><tr>${thsH}</tr></thead><tbody>${rows}</tbody></table>`,resumen:`${claves.length} subcuentas — Activo: ${fmtMonZ(totals[10])} | Pasivo: ${fmtMonZ(totals[11])}`};
+            }
         }
 
         function inicializarSelectorKardex() {
@@ -4023,32 +4032,56 @@
                 vals.forEach((v,i) => { totals[i] += v; });
 
                 const nombre = (nivel === 'cuenta') ? getNomCuenta(clave) : getNomSub(clave);
-                const padreCol = (nivel === 'cuenta') ? '' : getPadre(clave);
+                const esConsolidado = nivel === 'cuenta';
 
-                rows += `<tr>
-                    <td>${padreCol}</td>
-                    <td>${clave}</td>
-                    <td>${nombre}</td>
-                    ${vals.map(v => `<td class="num">${fmtMon(v)}</td>`).join('')}
-                </tr>`;
+                if (esConsolidado) {
+                    rows += `<tr>
+                        <td>${clave}</td>
+                        <td>${nombre}</td>
+                        ${vals.map(v => `<td class="num">${fmtMon(v)}</td>`).join('')}
+                    </tr>`;
+                } else {
+                    rows += `<tr>
+                        <td>${getPadre(clave)}</td>
+                        <td>${clave}</td>
+                        <td>${nombre}</td>
+                        ${vals.map(v => `<td class="num">${fmtMon(v)}</td>`).join('')}
+                    </tr>`;
+                }
             });
 
-            rows += `<tr class="tot-row">
-                <td colspan="3" style="text-align:right;font-weight:700;">TOTALES</td>
-                ${totals.map(v => `<td class="num">${fmtMonZ(v)}</td>`).join('')}
-            </tr>`;
-
-            const headers = ['Cta. Mayor','Subcuenta','Nombre',
-                'Mov. Deudor','Mov. Acreedor',
-                'Saldo Deudor','Saldo Acreedor',
-                'Aj. Deudor','Aj. Acreedor',
-                'Sdo. Aj. Deudor','Sdo. Aj. Acreedor',
-                'P y G Deudor','P y G Acreedor',
-                'Activo','Pasivo'];
-            const titulo = nivel === 'cuenta' ? 'Hoja de Trabajo — Por Cuenta' : 'Hoja de Trabajo — Por Subcuenta';
-
-            return wrapTable(titulo, fechas,
-                `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`);
+            const esConsolidado = nivel === 'cuenta';
+            if (esConsolidado) {
+                rows += `<tr class="tot-row">
+                    <td colspan="2" style="text-align:right;font-weight:700;">TOTALES</td>
+                    ${totals.map(v => `<td class="num">${fmtMonZ(v)}</td>`).join('')}
+                </tr>`;
+                const headers = ['Cuenta','Nombre',
+                    'Mov. Deudor','Mov. Acreedor',
+                    'Saldo Deudor','Saldo Acreedor',
+                    'Aj. Deudor','Aj. Acreedor',
+                    'Sdo. Aj. Deudor','Sdo. Aj. Acreedor',
+                    'P y G Deudor','P y G Acreedor',
+                    'Activo','Pasivo'];
+                const titulo = 'Hoja de Trabajo — Por Cuenta';
+                return wrapTable(titulo, fechas,
+                    `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`);
+            } else {
+                rows += `<tr class="tot-row">
+                    <td colspan="3" style="text-align:right;font-weight:700;">TOTALES</td>
+                    ${totals.map(v => `<td class="num">${fmtMonZ(v)}</td>`).join('')}
+                </tr>`;
+                const headers = ['Cta. Mayor','Subcuenta','Nombre',
+                    'Mov. Deudor','Mov. Acreedor',
+                    'Saldo Deudor','Saldo Acreedor',
+                    'Aj. Deudor','Aj. Acreedor',
+                    'Sdo. Aj. Deudor','Sdo. Aj. Acreedor',
+                    'P y G Deudor','P y G Acreedor',
+                    'Activo','Pasivo'];
+                const titulo = 'Hoja de Trabajo — Por Subcuenta';
+                return wrapTable(titulo, fechas,
+                    `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`);
+            }
         }
 
         // ══════════════════════════════════════════════════════════
