@@ -1326,8 +1326,11 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>Folio (automático)</label>
+                    <label>Folio</label>
                     <input type="text" id="pol_folio_display" readonly style="background:#eef4fb;color:var(--accent);font-weight:700;cursor:default;">
+                    <div style="text-align:right;margin-top:4px;">
+                        <span id="toggle_folio_manual" onclick="toggleFolioManual()" style="font-size:0.68rem;color:var(--muted);cursor:pointer;text-decoration:underline;user-select:none;">✏ editar folio</span>
+                    </div>
                 </div>
             </div>
             <div class="two-col" style="margin-bottom:14px;">
@@ -5046,6 +5049,43 @@
             if (editPolId) return; // en edición no cambiar folio
             const { label } = getNextFolio(tipo);
             document.getElementById('pol_folio_display').value = label;
+            // Si el folio está en modo manual, volver a automático al cambiar tipo
+            const inp = document.getElementById('pol_folio_display');
+            if (inp.dataset.manual === '1') {
+                inp.readOnly = true;
+                inp.style.background = '#eef4fb';
+                inp.style.cursor = 'default';
+                inp.dataset.manual = '0';
+                document.getElementById('toggle_folio_manual').textContent = '✏ editar folio';
+            }
+        };
+
+        window.toggleFolioManual = function() {
+            const inp = document.getElementById('pol_folio_display');
+            const lnk = document.getElementById('toggle_folio_manual');
+            if (inp.dataset.manual === '1') {
+                // volver a automático: regenerar folio
+                const tipo = document.getElementById('pol_tipo').value;
+                if (tipo && !editPolId) {
+                    inp.value = getNextFolio(tipo).label;
+                }
+                inp.readOnly = true;
+                inp.style.background = '#eef4fb';
+                inp.style.cursor = 'default';
+                inp.style.borderColor = '';
+                inp.dataset.manual = '0';
+                lnk.textContent = '✏ editar folio';
+            } else {
+                // activar edición manual
+                inp.readOnly = false;
+                inp.style.background = '#fff';
+                inp.style.cursor = 'text';
+                inp.style.borderColor = 'var(--accent-2)';
+                inp.dataset.manual = '1';
+                lnk.textContent = '↩ folio automático';
+                inp.focus();
+                inp.select();
+            }
         };
 
         // ── Calcular saldos pendientes de un asiento ──
@@ -5224,10 +5264,22 @@
             if (editPolId) {
                 const existing = db.polizas.find(p => p.id === editPolId);
                 folio = existing ? existing.folio : ''; folioNum = existing ? existing.folioNum : 0;
+                // Permitir edición del folio si estaba en modo manual
+                const inp = document.getElementById('pol_folio_display');
+                if (inp.dataset.manual === '1') {
+                    folio = inp.value.trim() || folio;
+                }
             } else {
-                const f = getNextFolio(tipo);
-                folio = f.label; folioNum = f.num;
-                db.config.polFolios[tipo] = folioNum;
+                const inp = document.getElementById('pol_folio_display');
+                if (inp.dataset.manual === '1' && inp.value.trim()) {
+                    // Folio manual: no avanzar el contador automático
+                    folio = inp.value.trim();
+                    folioNum = 0;
+                } else {
+                    const f = getNextFolio(tipo);
+                    folio = f.label; folioNum = f.num;
+                    db.config.polFolios[tipo] = folioNum;
+                }
             }
 
             const poliza = {
@@ -5273,7 +5325,15 @@
             if (!p) return;
             editPolId = id;
             document.getElementById('pol_tipo').value = p.tipo;
-            document.getElementById('pol_folio_display').value = p.folio;
+            const folioInp = document.getElementById('pol_folio_display');
+            folioInp.value = p.folio;
+            // En modo edición el folio siempre es editable
+            folioInp.readOnly = false;
+            folioInp.style.background = '#fff';
+            folioInp.style.cursor = 'text';
+            folioInp.style.borderColor = 'var(--accent-2)';
+            folioInp.dataset.manual = '1';
+            document.getElementById('toggle_folio_manual').textContent = '↩ folio automático';
             document.getElementById('pol_fecha').value = p.fecha;
             document.getElementById('pol_buscar_no').value = p.noAsiento;
             document.getElementById('label-edit-pol').style.display = 'inline';
@@ -5317,7 +5377,14 @@
             polTempMovs = [];
             polMovOrdenManual = false;
             document.getElementById('pol_tipo').value = '';
-            document.getElementById('pol_folio_display').value = '';
+            const folioInp = document.getElementById('pol_folio_display');
+            folioInp.value = '';
+            folioInp.readOnly = true;
+            folioInp.style.background = '#eef4fb';
+            folioInp.style.cursor = 'default';
+            folioInp.style.borderColor = '';
+            folioInp.dataset.manual = '0';
+            document.getElementById('toggle_folio_manual').textContent = '✏ editar folio';
             document.getElementById('pol_fecha').value = new Date().toISOString().split('T')[0];
             document.getElementById('pol_buscar_no').value = '';
             document.getElementById('pol_concepto').value = '';
