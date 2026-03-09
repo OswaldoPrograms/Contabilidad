@@ -1429,13 +1429,36 @@
                 <input type="date" id="pol-fil-ff" onchange="filtrarPolizas()" style="font-size:0.82rem;padding:9px 10px;flex:1;min-width:130px;">
                 <button onclick="limpiarFiltrosPolizas()" style="font-size:0.72rem;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-family:inherit;white-space:nowrap;">✕ Limpiar</button>
             </div>
+            <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:0.72rem;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;">Ordenar por</span>
+                <select id="pol-fil-orden" onchange="filtrarPolizas()" style="font-size:0.82rem;padding:8px 10px;flex:1;min-width:140px;">
+                    <option value="fecha">Fecha</option>
+                    <option value="tipo">Tipo</option>
+                    <option value="asiento">No. Asiento</option>
+                    <option value="folio">Folio</option>
+                    <option value="importe">Importe</option>
+                </select>
+                <select id="pol-fil-dir" onchange="filtrarPolizas()" style="font-size:0.82rem;padding:8px 10px;flex:1;min-width:110px;max-width:130px;">
+                    <option value="asc">↑ Asc</option>
+                    <option value="desc">↓ Desc</option>
+                </select>
+            </div>
             <div style="display:flex;gap:8px;margin-bottom:10px;">
                 <button class="btn-success" style="flex:1;margin:0;font-size:0.78rem;padding:9px;" onclick="exportarPolizasFiltPDF()">📄 PDF</button>
                 <button class="btn-blue" style="flex:1;margin:0;font-size:0.78rem;padding:9px;" onclick="exportarPolizasFiltExcel()">📗 Excel</button>
             </div>
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th>Folio</th><th>Tipo</th><th>Fecha</th><th>Concepto</th><th>Debe</th><th>Haber</th><th></th></tr></thead>
+                    <thead><tr>
+                        <th style="cursor:pointer;user-select:none;" onclick="setSortPol('folio')">Folio <span id="pol-sort-folio"></span></th>
+                        <th style="cursor:pointer;user-select:none;" onclick="setSortPol('tipo')">Tipo <span id="pol-sort-tipo"></span></th>
+                        <th style="cursor:pointer;user-select:none;" onclick="setSortPol('fecha')">Fecha <span id="pol-sort-fecha">↑</span></th>
+                        <th>Concepto</th>
+                        <th style="cursor:pointer;user-select:none;" onclick="setSortPol('importe')">Debe <span id="pol-sort-importe"></span></th>
+                        <th>Haber</th>
+                        <th style="cursor:pointer;user-select:none;" onclick="setSortPol('asiento')">No.Ast <span id="pol-sort-asiento"></span></th>
+                        <th></th>
+                    </tr></thead>
                     <tbody id="pol-hist-body"></tbody>
                 </table>
             </div>
@@ -4955,6 +4978,7 @@
         let polTempMovs = [];
         let polMovOrdenManual = false;
         let polAsientoRef = null;
+        let _polizasOrdenActual = []; // guarda el orden activo del historial para el PDF
 
         // ── Config toggle ──
         window.togglePolConfig = function() {
@@ -5080,11 +5104,12 @@
         function calcularSaldosPendientes(asientoId, excludePolId) {
             const movs = db.movimientos.filter(m => m.idAsiento === asientoId);
             const polizas = (db.polizas || []).filter(p => p.refAsiento === asientoId && p.id !== excludePolId);
-            return movs.map((m, i) => {
+            return movs.map((m) => {
                 let polD = 0, polH = 0;
                 polizas.forEach(p => {
                     (p.movimientos || []).forEach(pm => {
-                        if (pm.movIdx === i || (pm.movIdx === undefined && pm.subcuenta === m.subcuenta)) {
+                        // Comparar siempre por subcuenta para evitar errores de orden entre colección y póliza
+                        if (pm.subcuenta === m.subcuenta) {
                             polD += pm.debe || 0;
                             polH += pm.haber || 0;
                         }
@@ -5120,7 +5145,7 @@
                 const pendD = saldos[i].debePendiente;
                 const pendH = saldos[i].haberPendiente;
                 return {
-                    idx: i,
+                    idx: m.subcuenta,  // usar subcuenta como índice para matching robusto
                     cuentaMayor: padre,
                     subcuenta: m.subcuenta,
                     nombre: s ? s.nombre : 'Sin nombre',
@@ -5273,7 +5298,7 @@
                 autorizado: document.getElementById('pol_autorizado').value.trim(),
                 auxiliar: document.getElementById('pol_auxiliar').value.trim(),
                 movimientos: movsActivos.map(m => ({
-                    movIdx: m.idx,
+                    movIdx: m.subcuenta,  // guardar subcuenta para matching robusto
                     cuentaMayor: m.cuentaMayor,
                     subcuenta: m.subcuenta,
                     nombre: m.nombre,
@@ -5324,7 +5349,7 @@
             // Restaurar importes guardados
             if (polTempMovs.length > 0 && p.movimientos) {
                 p.movimientos.forEach(pm => {
-                    const tm = polTempMovs.find(t => t.idx === pm.movIdx);
+                    const tm = polTempMovs.find(t => t.subcuenta === pm.subcuenta);
                     if (tm) { tm.debe = pm.debe || 0; tm.haber = pm.haber || 0; }
                 });
                 renderPolMovimientos();
@@ -5446,13 +5471,27 @@
             const tipo = document.getElementById('pol-fil-tipo').value;
             const fi = document.getElementById('pol-fil-fi').value;
             const ff = document.getElementById('pol-fil-ff').value;
+            const orden = (document.getElementById('pol-fil-orden') || {}).value || 'fecha';
+            const dir   = (document.getElementById('pol-fil-dir')   || {}).value || 'asc';
 
             let rows = (db.polizas || []).slice();
             if (q) rows = rows.filter(p => (p.folio||'').toLowerCase().includes(q) || (p.concepto||'').toLowerCase().includes(q) || String(p.noAsiento).includes(q));
             if (tipo) rows = rows.filter(p => p.tipo === tipo);
             if (fi) rows = rows.filter(p => p.fecha >= fi);
             if (ff) rows = rows.filter(p => p.fecha <= ff);
-            rows.sort((a, b) => a.fecha.localeCompare(b.fecha) || a.folio.localeCompare(b.folio));
+
+            const tipoOrd = { Ingresos: 1, Egresos: 2, Diario: 3 };
+            rows.sort((a, b) => {
+                let cmp = 0;
+                if (orden === 'fecha')    cmp = a.fecha.localeCompare(b.fecha) || a.folio.localeCompare(b.folio);
+                else if (orden === 'tipo')    cmp = (tipoOrd[a.tipo]||9) - (tipoOrd[b.tipo]||9) || a.folio.localeCompare(b.folio);
+                else if (orden === 'asiento') cmp = (parseInt(a.noAsiento)||0) - (parseInt(b.noAsiento)||0);
+                else if (orden === 'folio')   cmp = a.folio.localeCompare(b.folio);
+                else if (orden === 'importe') cmp = (a.totalDebe||0) - (b.totalDebe||0);
+                return dir === 'desc' ? -cmp : cmp;
+            });
+
+            _polizasOrdenActual = rows; // guardar para que PDF/Excel usen el mismo orden
 
             const tipoColor = t => {
                 if (t === 'Ingresos') return 'background:#e8f5ef;color:var(--green);';
@@ -5469,15 +5508,35 @@
                 '<td style="font-size:0.75rem;">' + (p.concepto||'') + '</td>' +
                 '<td class="num" style="font-size:0.78rem;">' + fmtMon(p.totalDebe) + '</td>' +
                 '<td class="num" style="font-size:0.78rem;">' + fmtMon(p.totalHaber) + '</td>' +
+                '<td class="td-code" style="font-size:0.72rem;color:var(--muted);">' + (p.noAsiento||'') + '</td>' +
                 '<td><div class="action-btns">' +
                 '<button class="btn-icon btn-edit-icon" onclick="editarPoliza(\'' + p.id + '\')">✏</button>' +
                 '<button class="btn-icon btn-del-icon" onclick="eliminarPoliza(\'' + p.id + '\')">🗑</button>' +
                 '<button class="btn-icon" style="background:#eef4fb;color:var(--accent);border:1px solid #b8cfe0;" onclick="verPoliza(\'' + p.id + '\')" title="Ver/Imprimir">🖨</button>' +
                 '</div></td></tr>'
-            ).join('') || '<tr class="empty-row"><td colspan="7">Sin pólizas</td></tr>';
+            ).join('') || '<tr class="empty-row"><td colspan="8">Sin pólizas</td></tr>';
+
+            // Actualizar indicadores de ordenamiento en encabezados
+            ['folio','tipo','fecha','importe','asiento'].forEach(k => {
+                const el = document.getElementById('pol-sort-' + k);
+                if (el) el.textContent = orden === k ? (dir === 'asc' ? '↑' : '↓') : '';
+            });
 
             const cnt = document.getElementById('pol-hist-count');
             if (cnt) cnt.textContent = '(' + rows.length + ' de ' + (db.polizas||[]).length + ')';
+        };
+
+        window.setSortPol = function(campo) {
+            const ordenEl = document.getElementById('pol-fil-orden');
+            const dirEl   = document.getElementById('pol-fil-dir');
+            if (!ordenEl || !dirEl) return;
+            if (ordenEl.value === campo) {
+                dirEl.value = dirEl.value === 'asc' ? 'desc' : 'asc';
+            } else {
+                ordenEl.value = campo;
+                dirEl.value   = 'asc';
+            }
+            filtrarPolizas();
         };
 
         window.limpiarFiltrosPolizas = function() {
@@ -5485,6 +5544,10 @@
             document.getElementById('pol-fil-tipo').value = '';
             document.getElementById('pol-fil-fi').value = '';
             document.getElementById('pol-fil-ff').value = '';
+            const orden = document.getElementById('pol-fil-orden');
+            const dir   = document.getElementById('pol-fil-dir');
+            if (orden) orden.value = 'fecha';
+            if (dir)   dir.value   = 'asc';
             filtrarPolizas();
             renderPendientes();
         };
@@ -5593,8 +5656,13 @@
             return rows.sort((a,b) => a.fecha.localeCompare(b.fecha) || a.folio.localeCompare(b.folio));
         }
 
+        function getPolizasOrdenEstablecido() {
+            // Devuelve exactamente el orden visible en el historial (filtros + sort activos)
+            return _polizasOrdenActual.slice();
+        }
+
         window.exportarPolizasFiltPDF = function() {
-            const polizas = getPolizasFiltradas();
+            const polizas = getPolizasOrdenEstablecido();
             if (!polizas.length){showError('No hay pólizas para exportar.');return;}
             // Método nativo: ventana con todas las pólizas, page-break entre cada una, window.print()
             const pageCSS = '@page { size: letter portrait; margin: 10mm 12mm 10mm 10mm; }';
