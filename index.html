@@ -6217,15 +6217,27 @@
             let movRows = '';
             // Respetar siempre el orden registrado, sin reordenar al imprimir
             const _movsSorted = (p.movimientos||[]).slice();
+            let primerDebe = true, primerHaber = true;
             _movsSorted.forEach(m => {
                 const esAbono = m.haber > 0;
                 const indentStyle = esAbono ? 'padding-left:18px;' : '';
+                let debeStr = '', haberStr = '';
+                if (m.debe > 0) {
+                    const val = fmtMonZ(m.debe);
+                    debeStr = primerDebe ? val : val.replace(/^\$/, '');
+                    primerDebe = false;
+                }
+                if (m.haber > 0) {
+                    const val = fmtMonZ(m.haber);
+                    haberStr = primerHaber ? val : val.replace(/^\$/, '');
+                    primerHaber = false;
+                }
                 movRows += '<tr>' +
                     '<td style="' + cs + 'text-align:center;">' + (m.cuentaMayor||'') + '</td>' +
                     '<td style="' + cs + 'text-align:center;">' + m.subcuenta + '</td>' +
                     '<td style="' + cs + indentStyle + '">' + m.nombre + '</td>' +
-                    '<td style="' + cs + 'text-align:right;font-variant-numeric:tabular-nums;">' + (m.debe > 0 ? fmtMonZ(m.debe) : '') + '</td>' +
-                    '<td style="' + cs + 'text-align:right;font-variant-numeric:tabular-nums;">' + (m.haber > 0 ? fmtMonZ(m.haber) : '') + '</td>' +
+                    '<td style="' + cs + 'text-align:right;font-variant-numeric:tabular-nums;">' + debeStr + '</td>' +
+                    '<td style="' + cs + 'text-align:right;font-variant-numeric:tabular-nums;">' + haberStr + '</td>' +
                     '</tr>';
             });
             for (let i = _movsSorted.length; i < FILAS_MIN; i++) {
