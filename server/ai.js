@@ -1,7 +1,10 @@
+const tools = require('./tools');
+
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const MAX_MESSAGE_LENGTH = 4000;
 const MAX_HISTORY_MESSAGES = 20;
-const SYSTEM_PROMPT = 'Eres el asistente de la aplicación "Mi Asistente". En esta etapa solo puedes conversar y responder preguntas. No afirmes que puedes crear tareas, modificar datos, consultar la base de datos ni ejecutar acciones, porque todavía no tienes herramientas para hacerlo.';
+const MAX_TOOL_ITERATIONS = 5;
+const SYSTEM_PROMPT = 'Eres Luna, el asistente de la aplicación "Mi Asistente". Dispones de herramientas reales para crear, buscar, editar, completar y eliminar tareas, y para guardar y consultar personas. Usa las herramientas cuando el usuario pida una acción o información de sus datos. Para crear_tarea solo es imprescindible un título o acción identificable: ejecuta primero y no preguntes por hora, prioridad, descripción, recordatorio, etiquetas ni tipo. Si el usuario proporciona una fecha sin hora, crea la tarea sin hora; si omite los demás campos, usa priority medium, type task, description vacío, reminder none y tags []. Si falta una fecha fundamental para una cita o existe una ambigüedad que pueda cambiar significativamente la acción, haz solo esa pregunta imprescindible. Las recomendaciones son opcionales, deben hacerse después de ejecutar la acción y nunca bloquearla. Tras ejecutar una acción, responde en una o dos frases y haz como máximo una recomendación o pregunta adicional sobre uno o dos datos realmente útiles para el contexto; elige los más relevantes y no enumeres alternativas. No digas que falta la hora ni uses frases genéricas como "¿quieres añadir algo más?", "¿quieres cambiar algo?" o "¿quieres crear otra?". Para personas, guarda inmediatamente el nombre y el contexto disponible sin pedir teléfono, correo u otros campos. La información puede completarse progresivamente mediante crear_persona y editar_persona. Antes de crear una persona, usa buscar_personas cuando haya una posibilidad razonable de coincidencia; si la búsqueda devuelve una coincidencia clara, actualízala en lugar de crear otra. Si devuelve varias personas plausibles, pregunta cuál es antes de modificar o relacionar datos. Si devuelve una sola coincidencia clara, usa su identificador internamente. En mensajes consecutivos, pronombres como "su" o "él/ella" se refieren a la persona recién mencionada cuando el contexto inmediato es claro; busca esa persona y actualízala sin volver a preguntar. Para una tarea con personas, busca primero cada persona por nombre y pasa sus identificadores en personIds; relaciona todas las personas mencionadas. Para consultar tareas de una persona, busca primero la persona y luego usa buscar_tareas con personaId. Nunca cargues ni solicites la lista completa de personas: consulta solo lo relevante. Para una cita médica o dentista prioriza hora o lugar; para una entrega escolar prioriza materia o recordatorio; para llamar a alguien prioriza el teléfono si no está registrado; para una reunión prioriza hora o lugar; para un pago prioriza importe o fecha límite; para una compra prioriza lugar o lista relacionada; para un evento prioriza hora o ubicación. Si ya conoces un dato mediante etiquetas, personas, proyectos, memoria o la tarea existente, no lo vuelvas a pedir ni recomendar. Antes de recomendar información adicional, consulta las herramientas disponibles cuando sea razonable. Nunca muestres nombres ni valores internos de campos como appointment, medium, none, priority, tags, type, personId o personIds salvo que el usuario pida detalles técnicos; tampoco describas los valores predeterminados. Mantén las respuestas cortas, naturales y enfocadas en la acción realizada. Interpreta solicitudes como "agenda", "crea" o "recuérdame" como una petición de crear la tarea cuando el título o acción sea identificable. Convierte expresiones relativas como "mañana", "pasado mañana" o "el viernes" a una fecha absoluta YYYY-MM-DD usando la fecha actual. Nunca afirmes que una acción ocurrió si la herramienta devolvió un error o no se ejecutó.';
 
 function configurationError() {
   if (!process.env.OPENROUTER_API_KEY) return 'Falta configurar OPENROUTER_API_KEY en el archivo .env';
@@ -20,6 +23,30 @@ function validateMessages(messages) {
 async function chat(messages) {
   const error = configurationError();
   if (error) throw new Error(error);
+  const conversation = [{ role: 'system', content: `${SYSTEM_PROMPT} Hoy es ${new Date().toISOString().slice(0, 10)}.` }, ...validateMessages(messages)];
+  let dataChanged = false;
+
+  for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
+    const response = await requestModel(conversation);
+    const message = response.choices?.[0]?.message;
+    if (!message) throw new Error('OpenRouter no devolvió un mensaje válido');
+    if (!Array.isArray(message.tool_calls) || message.tool_calls.length === 0) {
+      if (typeof message.content !== 'string' || !message.content.trim()) throw new Error('OpenRouter no devolvió una respuesta de texto');
+      return { message: message.content.trim(), dataChanged };
+    }
+
+    conversation.push(message);
+    for (const toolCall of message.tool_calls) {
+      const result = await tools.execute(toolCall.function?.name, toolCall.function?.arguments);
+      dataChanged = dataChanged || result.dataChanged === true;
+      conversation.push({ role: 'tool', tool_call_id: toolCall.id, content: JSON.stringify(result) });
+    }
+  }
+
+  throw new Error('El modelo no terminó de procesar las herramientas');
+}
+
+async function requestModel(messages) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30000);
   try {
@@ -32,13 +59,11 @@ async function chat(messages) {
         ...(process.env.OPENROUTER_SITE_URL ? { 'HTTP-Referer': process.env.OPENROUTER_SITE_URL } : {}),
         ...(process.env.OPENROUTER_SITE_NAME ? { 'X-Title': process.env.OPENROUTER_SITE_NAME } : {})
       },
-      body: JSON.stringify({ model: process.env.OPENROUTER_MODEL, messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...validateMessages(messages)] })
+      body: JSON.stringify({ model: process.env.OPENROUTER_MODEL, messages, tools: tools.tools, tool_choice: 'auto' })
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(data.error?.message || `OpenRouter devolvió HTTP ${response.status}`);
-    const content = data.choices?.[0]?.message?.content;
-    if (typeof content !== 'string' || !content.trim()) throw new Error('OpenRouter no devolvió una respuesta de texto');
-    return content.trim();
+    return data;
   } catch (requestError) {
     if (requestError.name === 'AbortError') throw new Error('La solicitud al modelo tardó demasiado');
     throw requestError;
