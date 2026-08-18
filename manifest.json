@@ -1,0 +1,1 @@
+{"name":"Mi Asistente","short_name":"Asistente","description":"Gestión sencilla de tareas para organizar tu día.","start_url":"./","display":"standalone","orientation":"any","theme_color":"#173f5f","background_color":"#f6f8f7","icons":[{"src":"icons/icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}

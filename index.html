@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173f5f">
+  <meta name="description" content="Gestión sencilla de tareas para Mi Asistente.">
+  <title>Mi Asistente | Tareas</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header"><div class="header-inner">
+    <a class="brand" href="./" aria-label="Mi Asistente, inicio"><span class="brand-mark" aria-hidden="true">✦</span><span>Mi Asistente</span></a>
+    <div class="header-actions"><span class="save-status" id="save-status">Guardado local</span><button class="button button-primary" id="new-task-button" type="button">+ Nueva tarea</button></div>
+  </div></header>
+  <main class="page-shell">
+    <section class="welcome-row" aria-labelledby="page-title"><div><p class="eyebrow">Organiza tu día</p><h1 id="page-title">Tus tareas, claras y a tu ritmo.</h1><p class="muted" id="task-summary">Sin tareas pendientes</p></div><div class="date-stamp" id="current-date"></div></section>
+    <section class="workspace" aria-label="Gestión de tareas">
+      <div class="task-area">
+        <div class="toolbar"><div class="filter-tabs" role="tablist" aria-label="Filtrar tareas"><button class="filter-tab is-active" data-filter="all" type="button" role="tab" aria-selected="true">Todas</button><button class="filter-tab" data-filter="pending" type="button" role="tab" aria-selected="false">Pendientes</button><button class="filter-tab" data-filter="completed" type="button" role="tab" aria-selected="false">Completadas</button></div><label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Buscar tareas o etiquetas</span><input id="search-input" type="search" placeholder="Buscar tareas o etiquetas..."></label></div>
+        <div class="tag-filters" id="tag-filters" aria-label="Filtrar por etiqueta"></div><div id="task-groups"></div>
+      </div>
+      <aside class="assistant-panel" aria-label="Conversación con Mi Asistente"><div class="assistant-heading"><span class="assistant-icon" aria-hidden="true">✧</span><div><p class="eyebrow">Asistente</p><h2>Conversación</h2></div></div><div class="chat-messages" id="chat-messages" aria-live="polite"><div class="assistant-empty" id="chat-empty"><div class="sparkle" aria-hidden="true">✦</div><p>Hola. Estoy listo para conversar contigo.</p></div></div><form class="composer" id="chat-form"><label class="sr-only" for="chat-input">Mensaje para el asistente</label><input id="chat-input" type="text" placeholder="Escribe algo..." autocomplete="off" maxlength="4000"><button class="icon-button" id="chat-submit" type="submit" aria-label="Enviar mensaje" title="Enviar mensaje">➤</button></form></aside>
+    </section>
+  </main>
+  <dialog class="task-dialog" id="task-dialog"><form id="task-form" method="dialog"><div class="dialog-header"><div><p class="eyebrow" id="dialog-kicker">Nueva tarea</p><h2 id="dialog-title">Añade algo importante</h2></div><button class="close-button" id="close-dialog" type="button" aria-label="Cerrar formulario">×</button></div><input id="task-id" type="hidden"><label class="field field-wide">Título <span>*</span><input id="task-title" name="title" type="text" placeholder="¿Qué necesitas hacer?" required maxlength="120"></label><label class="field field-wide">Descripción<textarea id="task-description" name="description" rows="3" placeholder="Añade un poco de contexto..."></textarea></label><div class="field-grid"><label class="field">Fecha<input id="task-date" name="date" type="date"></label><label class="field">Hora<input id="task-time" name="time" type="time"></label><label class="field">Prioridad<select id="task-priority" name="priority"><option value="low">Baja</option><option value="medium" selected>Media</option><option value="high">Alta</option></select></label><label class="field">Recordatorio<select id="task-reminder" name="reminder"><option value="none">Sin recordatorio</option><option value="15m">15 minutos antes</option><option value="1h">1 hora antes</option><option value="1d">1 día antes</option></select></label></div><label class="field field-wide">Etiquetas<input id="task-tags" name="tags" type="text" placeholder="#universidad, #proyecto:reporte"><small>Sepáralas con comas. Puedes usar categorías como #persona:juan.</small></label><div class="dialog-actions"><button class="button button-quiet" id="cancel-dialog" type="button">Cancelar</button><button class="button button-primary" type="submit">Guardar tarea</button></div></form></dialog>
+  <script src="app.js" defer></script>
+</body>
+</html>
