@@ -4,3 +4,11 @@ server/database.sqlite
 server/database.sqlite-shm
 server/database.sqlite-wal
 npm-debug.log*
+*_backup.*
+*_backup/
+server_backup/
+*.log
+*.webm
+*.ogg
+*.wav
+*.mp4
